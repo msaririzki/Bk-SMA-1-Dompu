@@ -1,0 +1,6 @@
+@extends('layouts.app')
+@section('title','Dokumen dan Home Visit')
+@section('content')
+<div class="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><h1 class="text-3xl font-bold">Dokumen dan home visit</h1><p class="mt-2 text-sm text-slate-500">Arsip surat dan laporan yang terhubung ke map digital siswa.</p></div><div class="flex gap-2"><a class="btn btn-secondary" href="{{ route('home-visits.create') }}">+ Home visit</a><a class="btn btn-primary" href="{{ route('documents.create') }}">+ Dokumen</a></div></div>
+<div class="card table-wrap"><table class="table"><thead><tr><th>Tanggal/nomor</th><th>Siswa</th><th>Jenis</th><th>Status</th><th></th></tr></thead><tbody>@forelse($documents as $document)<tr><td><strong>{{ $document->document_date->translatedFormat('d M Y') }}</strong><p class="text-xs text-slate-400">{{ $document->number ?: 'Tanpa nomor' }}</p></td><td>{{ $document->student->name }}</td><td>{{ $document->type->label() }}</td><td><span class="badge badge-emerald">{{ $document->status }}</span></td><td class="text-right"><a class="btn btn-secondary" href="{{ route('documents.show',$document) }}">Buka</a></td></tr>@empty<tr><td colspan="5" class="py-10 text-center text-slate-400">Belum ada dokumen.</td></tr>@endforelse</tbody></table></div><div class="mt-5">{{ $documents->links() }}</div>
+@endsection

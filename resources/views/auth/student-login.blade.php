@@ -1,0 +1,5 @@
+@extends('layouts.auth')
+@section('title','Masuk Siswa')
+@section('content')
+<div class="card card-body"><span class="badge badge-amber">Portal siswa</span><h1 class="mt-4 text-3xl font-bold">Lihat data saya</h1><p class="mt-2 text-sm text-slate-500">Gunakan NISN, NIS, atau ID sementara dan PIN pribadi.</p>@if($errors->any())<p class="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{{ $errors->first() }}</p>@endif<form method="post" class="mt-7 space-y-5">@csrf<div><label class="form-label">NISN / NIS / ID sementara</label><input class="form-control" name="identifier" value="{{ old('identifier') }}" required autofocus></div><div><label class="form-label">PIN</label><input class="form-control" type="password" name="password" inputmode="numeric" required></div><button class="btn btn-accent w-full">Masuk sebagai siswa</button></form><p class="mt-5 text-center text-xs leading-5 text-slate-500">Data hanya dapat dilihat oleh pemilik akun. Hubungi guru BK jika lupa PIN.</p></div>
+@endsection

@@ -1,0 +1,5 @@
+@extends('layouts.auth')
+@section('title','Masuk Staf')
+@section('content')
+<div class="card card-body"><span class="badge badge-emerald">Portal staf</span><h1 class="mt-4 text-3xl font-bold">Selamat datang</h1><p class="mt-2 text-sm text-slate-500">Masuk menggunakan akun admin, koordinator, atau guru BK.</p>@if($errors->any())<p class="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{{ $errors->first() }}</p>@endif<form method="post" class="mt-7 space-y-5">@csrf<div><label class="form-label">Username</label><input class="form-control" name="username" value="{{ old('username') }}" required autofocus></div><div><label class="form-label">Kata sandi</label><input class="form-control" type="password" name="password" required></div><label class="flex items-center gap-2 text-sm text-slate-600"><input type="checkbox" name="remember" value="1"> Ingat saya</label><button class="btn btn-primary w-full">Masuk ke aplikasi</button></form><a href="{{ route('student.login') }}" class="mt-5 block text-center text-sm font-semibold text-teal-700">Saya seorang siswa →</a></div>
+@endsection

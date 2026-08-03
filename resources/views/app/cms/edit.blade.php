@@ -1,0 +1,5 @@
+@extends('layouts.app')
+@section('title','Edit '.$page->title)
+@section('content')
+<div class="mb-7"><a class="text-sm font-semibold text-teal-700" href="{{ route('cms.index') }}">← Konten website</a><h1 class="mt-2 text-3xl font-bold">Edit {{ $page->title }}</h1></div><form method="post" action="{{ route('cms.update',$page) }}" class="card card-body mx-auto max-w-5xl space-y-5">@csrf @method('put')<div><label class="form-label">Judul</label><input class="form-control" name="title" value="{{ old('title',$page->title) }}" required></div><div><label class="form-label">Isi halaman</label><textarea class="form-control font-mono" name="content" rows="20" required>{{ old('content',$page->content) }}</textarea><p class="mt-2 text-xs text-slate-400">Tag yang diizinkan: paragraf, judul, daftar, tebal, miring, dan kutipan.</p></div><label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_published" value="1" @checked($page->is_published)> Terbitkan halaman</label><div class="flex justify-end"><button class="btn btn-primary">Simpan perubahan</button></div></form>
+@endsection

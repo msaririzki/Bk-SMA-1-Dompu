@@ -1,0 +1,1 @@
+<div class="header"><h1>{{ $settings['school_name'] ?? 'SMAN 1 DOMPU' }}</h1><p>{{ $settings['tagline'] ?? 'BERKARAKTER, CERDAS DAN BERBUDAYA' }}</p><p>{{ $settings['school_address'] ?? 'Dompu, Nusa Tenggara Barat' }}</p></div>
