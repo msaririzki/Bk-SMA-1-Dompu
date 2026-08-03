@@ -3,11 +3,12 @@
 @section('title', $student->name)
 
 @section('content')
-    <div class="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+    <header class="page-header">
         <div>
-            <a class="text-sm font-semibold text-teal-700" href="{{ route('students.index') }}">← Data siswa</a>
-            <h1 class="mt-2 text-3xl font-bold">{{ $student->name }}</h1>
-            <p class="mt-2 text-sm text-slate-500">{{ $student->temporary_id }} · {{ $student->currentEnrollment?->schoolClass?->name ?? 'Belum ada kelas' }}</p>
+            <a class="back-link" href="{{ route('students.index') }}"><x-icon name="arrow-left" /> Data siswa</a>
+            <p class="page-eyebrow"><x-icon name="user" class="size-4" /> Profil siswa</p>
+            <h1 class="page-title">{{ $student->name }}</h1>
+            <p class="page-description">{{ $student->temporary_id }} · {{ $student->currentEnrollment?->schoolClass?->name ?? 'Belum ada kelas' }}</p>
         </div>
         <div class="flex flex-wrap gap-2">
             <a class="btn btn-secondary" href="{{ route('students.recap', $student) }}">Unduh rekap PDF</a>
@@ -15,7 +16,7 @@
                 <a class="btn btn-accent" href="{{ route('cases.create', ['student' => $student->id]) }}">+ Pelanggaran</a>
             @endcan
         </div>
-    </div>
+    </header>
 
     @if ($score)
         <div class="grid gap-4 sm:grid-cols-3">

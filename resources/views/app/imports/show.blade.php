@@ -3,11 +3,12 @@
 @section('title', 'Review Impor')
 
 @section('content')
-    <div class="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+    <header class="page-header">
         <div>
-            <a class="text-sm font-semibold text-teal-700" href="{{ route('imports.index') }}">← Riwayat impor</a>
-            <h1 class="mt-2 text-3xl font-bold">Review {{ $batch->original_name }}</h1>
-            <p class="mt-2 text-sm text-slate-500">Konfirmasi hanya memasukkan baris siap dan pembaruan identitas resmi.</p>
+            <a class="back-link" href="{{ route('imports.index') }}"><x-icon name="arrow-left" /> Riwayat impor</a>
+            <p class="page-eyebrow"><x-icon name="upload" class="size-4" /> Validasi data</p>
+            <h1 class="page-title">Review {{ $batch->original_name }}</h1>
+            <p class="page-description">Konfirmasi hanya memasukkan baris siap dan pembaruan identitas resmi.</p>
         </div>
         <div class="flex flex-wrap gap-2">
             <a class="btn btn-secondary" href="{{ route('imports.report', $batch) }}">Unduh laporan konflik</a>
@@ -18,7 +19,7 @@
                 </form>
             @endif
         </div>
-    </div>
+    </header>
 
     <div class="grid gap-4 sm:grid-cols-4">
         <div class="stat"><p class="stat-label">Total</p><p class="stat-value">{{ $batch->total_rows }}</p></div>
