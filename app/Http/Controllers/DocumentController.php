@@ -25,7 +25,18 @@ class DocumentController extends Controller
 
     public function create(Request $r)
     {
-        return view('app.documents.create', ['students' => Student::orderBy('name')->get(), 'cases' => ViolationCase::with('student')->latest()->get(), 'types' => DocumentType::cases(), 'selectedStudent' => $r->student, 'selectedCase' => $r->case]);
+        $selectedStudent = $r->student ? Student::findOrFail($r->student) : null;
+        $selectedCase = $r->case ? ViolationCase::findOrFail($r->case) : null;
+        if ($selectedStudent) {
+            $this->authorize('update', $selectedStudent);
+        }
+        if ($selectedCase) {
+            $this->authorize('update', $selectedCase);
+        }
+        $students = Student::orderBy('name')->get()->filter(fn (Student $student) => $r->user()->can('update', $student))->values();
+        $cases = ViolationCase::with('student')->latest()->get()->filter(fn (ViolationCase $case) => $r->user()->can('update', $case))->values();
+
+        return view('app.documents.create', ['students' => $students, 'cases' => $cases, 'types' => DocumentType::cases(), 'selectedStudent' => $selectedStudent?->id, 'selectedCase' => $selectedCase?->id]);
     }
 
     public function store(Request $r, AuditService $audit)
@@ -54,8 +65,16 @@ class DocumentController extends Controller
     public function homeVisitForm(Request $r)
     {
         $student = $r->student ? Student::with('currentEnrollment.schoolClass')->find($r->student) : null;
+        if ($student) {
+            $this->authorize('update', $student);
+        }
+        $students = Student::with('currentEnrollment.schoolClass')
+            ->orderBy('name')
+            ->get()
+            ->filter(fn (Student $candidate) => $r->user()->can('update', $candidate))
+            ->values();
 
-        return view('app.documents.home-visit', ['students' => Student::with('currentEnrollment.schoolClass')->orderBy('name')->get(), 'student' => $student, 'teachers' => Teacher::orderBy('name')->get()]);
+        return view('app.documents.home-visit', ['students' => $students, 'student' => $student, 'teachers' => Teacher::orderBy('name')->get()]);
     }
 
     public function homeVisitStore(Request $r, AuditService $audit)

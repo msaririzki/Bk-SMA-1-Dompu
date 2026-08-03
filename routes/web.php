@@ -73,6 +73,7 @@ Route::middleware('auth')->group(function (): void {
             Route::post('/impor', [StudentImportController::class, 'store'])->name('imports.store');
             Route::get('/impor/template', [StudentImportController::class, 'template'])->name('imports.template');
             Route::get('/impor/{batch}', [StudentImportController::class, 'show'])->name('imports.show');
+            Route::get('/impor/{batch}/laporan-review', [StudentImportController::class, 'report'])->name('imports.report');
             Route::post('/impor/{batch}/konfirmasi', [StudentImportController::class, 'commit'])->name('imports.commit');
             Route::post('/impor/{batch}/baris/{row}/review', [StudentImportController::class, 'resolve'])->name('imports.resolve');
 

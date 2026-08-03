@@ -9,6 +9,7 @@ use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\Teacher;
 use App\Models\User;
+use App\Models\ViolationCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -29,8 +30,45 @@ class AuthorizationAndAccountTest extends TestCase
         $user = User::factory()->create(['role' => UserRole::Counselor]);
         $teacher = Teacher::create(['user_id' => $user->id, 'name' => $user->name]);
         $teacher->assignedClasses()->attach($assignedClass);
+        $otherCreator = User::factory()->create(['role' => UserRole::Counselor]);
+        $otherCase = ViolationCase::create([
+            'case_number' => 'UAT-AUTH-001',
+            'student_id' => $otherStudent->id,
+            'academic_year_id' => $year->id,
+            'created_by' => $otherCreator->id,
+            'occurred_at' => now(),
+            'chronology' => 'Kasus kelas lain untuk pengujian hak akses.',
+            'status' => 'open',
+        ]);
 
-        $this->actingAs($user)->get(route('students.show', $otherStudent))->assertOk();
+        $this->actingAs($user)
+            ->get(route('students.show', $otherStudent))
+            ->assertOk()
+            ->assertDontSee('Simpan identitas')
+            ->assertDontSee(route('cases.create', ['student' => $otherStudent->id]), false);
+        $this->actingAs($user)
+            ->get(route('cases.create'))
+            ->assertOk()
+            ->assertSee($assignedStudent->name)
+            ->assertDontSee($otherStudent->name);
+        $this->actingAs($user)->get(route('cases.create', ['student' => $otherStudent->id]))->assertForbidden();
+        $this->actingAs($user)
+            ->get(route('documents.create'))
+            ->assertOk()
+            ->assertSee($assignedStudent->name)
+            ->assertDontSee($otherStudent->name);
+        $this->actingAs($user)->get(route('documents.create', ['student' => $otherStudent->id]))->assertForbidden();
+        $this->actingAs($user)->get(route('home-visits.create', ['student' => $otherStudent->id]))->assertForbidden();
+        $this->actingAs($user)
+            ->get(route('cases.show', $otherCase))
+            ->assertOk()
+            ->assertDontSee('Tambah tindak lanjut')
+            ->assertDontSee('Buat surat/dokumen')
+            ->assertDontSee('Perbarui status');
+        $this->actingAs($user)->post(route('cases.follow-up', $otherCase), [
+            'type' => 'coaching',
+            'status' => 'planned',
+        ])->assertForbidden();
         $this->actingAs($user)->put(route('students.update', $assignedStudent), $this->studentPayload($assignedStudent, 'Nama Diperbarui'))->assertRedirect();
         $this->actingAs($user)->put(route('students.update', $otherStudent), $this->studentPayload($otherStudent, 'Tidak Boleh Berubah'))->assertForbidden();
         $this->assertSame('Nama Diperbarui', $assignedStudent->fresh()->name);

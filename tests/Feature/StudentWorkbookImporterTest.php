@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Enums\UserRole;
 use App\Models\AcademicYear;
 use App\Models\Enrollment;
+use App\Models\ImportBatch;
+use App\Models\ImportRow;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\User;
@@ -81,5 +83,44 @@ class StudentWorkbookImporterTest extends TestCase
         $this->assertSame(1, $batch->conflict_rows);
         $row = $batch->rows()->where('sheet_name', 'SAINS 1')->first();
         $this->assertSame('XII-SAINS 1', $row->normalized_payload['class_name']);
+    }
+
+    public function test_authorized_staff_can_download_conflict_report_but_student_cannot(): void
+    {
+        Storage::fake('local');
+        $year = AcademicYear::create(['name' => '2026/2027', 'is_active' => true]);
+        $admin = User::factory()->create(['role' => UserRole::SuperAdmin, 'must_change_password' => false]);
+        $batch = ImportBatch::create([
+            'uploaded_by' => $admin->id,
+            'academic_year_id' => $year->id,
+            'original_name' => 'data-uji.xlsx',
+            'stored_path' => 'imports/data-uji.xlsx',
+            'file_hash' => str_repeat('a', 64),
+            'status' => 'review',
+            'total_rows' => 1,
+            'conflict_rows' => 1,
+        ]);
+        ImportRow::create([
+            'batch_id' => $batch->id,
+            'sheet_name' => 'X-1',
+            'row_number' => 3,
+            'raw_payload' => ['name' => 'Siswa Uji'],
+            'normalized_payload' => ['name' => 'Siswa Uji', 'gender' => 'L', 'nisn' => '0012345678', 'nis' => '00001', 'class_name' => 'X-1'],
+            'status' => 'conflict',
+            'message' => 'Data perlu ditinjau.',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('imports.report', $batch))
+            ->assertOk()
+            ->assertDownload("laporan-review-impor-{$batch->id}.xlsx");
+
+        $student = Student::factory()->create();
+        $studentUser = User::factory()->create([
+            'role' => UserRole::Student,
+            'student_id' => $student->id,
+            'must_change_password' => false,
+        ]);
+        $this->actingAs($studentUser)->get(route('imports.report', $batch))->assertForbidden();
     }
 }

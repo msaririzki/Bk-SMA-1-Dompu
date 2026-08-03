@@ -14,8 +14,12 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class StudentWorkbookImporter
@@ -351,6 +355,104 @@ class StudentWorkbookImporter
             mkdir(dirname($path), 0775, true);
         }
         (new Xlsx($sheet->getParent()))->save($path);
+
+        return $path;
+    }
+
+    public function reviewReport(ImportBatch $batch): string
+    {
+        $workbook = new Spreadsheet;
+        $summary = $workbook->getActiveSheet();
+        $summary->setTitle('Ringkasan');
+        $summary->fromArray([
+            ['LAPORAN REVIEW IMPOR DATA SISWA'],
+            [],
+            ['Nama file', $batch->original_name],
+            ['Status batch', $batch->status],
+            ['Total baris', "{$batch->total_rows} baris"],
+            ['Siap / pembaruan', "{$batch->ready_rows} baris"],
+            ['Konflik', "{$batch->conflict_rows} baris"],
+            ['Tidak valid', "{$batch->invalid_rows} baris"],
+            ['Sudah diimpor', "{$batch->imported_rows} baris"],
+            [],
+            ['Petunjuk'],
+            ['Periksa setiap baris pada sheet Review Konflik. Isi kolom Keputusan Sekolah dengan SETUJUI, ABAIKAN, atau PERBAIKI SUMBER. Keputusan tetap diterapkan melalui aplikasi agar tercatat pada audit log.'],
+        ], null, 'A1');
+        $summary->mergeCells('A1:D1');
+        $summary->mergeCells('A12:D14');
+        $summary->getStyle('A1:D1')->applyFromArray([
+            'font' => ['bold' => true, 'size' => 16, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '0F766E']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+        ]);
+        $summary->getRowDimension(1)->setRowHeight(30);
+        $summary->getStyle('A3:A9')->getFont()->setBold(true);
+        $summary->getStyle('A11')->getFont()->setBold(true)->getColor()->setRGB('0F766E');
+        $summary->getStyle('A12:D14')->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
+        $summary->getColumnDimension('A')->setWidth(24);
+        $summary->getColumnDimension('B')->setWidth(32);
+        $summary->getColumnDimension('C')->setWidth(18);
+        $summary->getColumnDimension('D')->setWidth(18);
+
+        $review = $workbook->createSheet();
+        $review->setTitle('Review Konflik');
+        $headers = ['Sheet', 'Baris', 'Nama', 'L/P', 'NISN', 'NIS', 'Kelas', 'Status', 'Keterangan', 'Keputusan Sekolah'];
+        $review->fromArray([$headers], null, 'A1');
+        $rows = $batch->rows()
+            ->whereIn('status', [ImportRowStatus::Conflict->value, ImportRowStatus::Invalid->value])
+            ->orderBy('sheet_name')
+            ->orderBy('row_number')
+            ->get();
+        $writeIdentifier = function (string $cell, mixed $value) use ($review): void {
+            $identifier = (string) ($value ?? '');
+            if ($identifier !== '' && ctype_digit($identifier) && strlen($identifier) <= 15) {
+                $review->setCellValue($cell, (int) $identifier);
+                $review->getStyle($cell)->getNumberFormat()->setFormatCode(str_repeat('0', strlen($identifier)));
+
+                return;
+            }
+            $review->setCellValueExplicit($cell, $identifier, DataType::TYPE_STRING);
+        };
+        $excelRow = 2;
+        foreach ($rows as $row) {
+            $data = $row->normalized_payload;
+            $review->fromArray([[
+                $row->sheet_name,
+                $row->row_number,
+                $data['name'] ?? null,
+                $data['gender'] ?? null,
+                null,
+                null,
+                $data['class_name'] ?? null,
+                $row->status->value,
+                $row->message,
+                null,
+            ]], null, "A{$excelRow}");
+            $writeIdentifier("E{$excelRow}", $data['nisn'] ?? null);
+            $writeIdentifier("F{$excelRow}", $data['nis'] ?? null);
+            $excelRow++;
+        }
+        $lastRow = max(2, $excelRow - 1);
+        $review->getStyle('A1:J1')->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '0F766E']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+        ]);
+        $review->getStyle("A1:J{$lastRow}")->getBorders()->getBottom()->setBorderStyle(Border::BORDER_HAIR)->getColor()->setRGB('CBD5E1');
+        $review->getStyle("A2:J{$lastRow}")->getAlignment()->setVertical(Alignment::VERTICAL_TOP);
+        $review->getStyle("C2:C{$lastRow}")->getAlignment()->setWrapText(true);
+        $review->getStyle("I2:J{$lastRow}")->getAlignment()->setWrapText(true);
+        $review->getStyle("E2:F{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+        $review->freezePane('A2');
+        $review->setAutoFilter("A1:J{$lastRow}");
+        foreach (['A' => 18, 'B' => 10, 'C' => 30, 'D' => 8, 'E' => 18, 'F' => 14, 'G' => 18, 'H' => 14, 'I' => 52, 'J' => 24] as $column => $width) {
+            $review->getColumnDimension($column)->setWidth($width);
+        }
+
+        Storage::disk('local')->makeDirectory('templates');
+        $path = Storage::disk('local')->path("templates/review-import-{$batch->id}.xlsx");
+        (new Xlsx($workbook))->save($path);
+        $workbook->disconnectWorksheets();
 
         return $path;
     }

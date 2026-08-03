@@ -54,4 +54,11 @@ class StudentImportController extends Controller
     {
         return response()->download($importer->template(), 'template-data-siswa.xlsx');
     }
+
+    public function report(ImportBatch $batch, StudentWorkbookImporter $importer)
+    {
+        return response()
+            ->download($importer->reviewReport($batch), "laporan-review-impor-{$batch->id}.xlsx")
+            ->deleteFileAfterSend(true);
+    }
 }

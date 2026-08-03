@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\AcademicYear;
 use App\Models\Student;
 use App\Models\User;
+use App\Models\ViolationCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -43,5 +44,33 @@ class AuthenticationAndPrivacyTest extends TestCase
         AcademicYear::create(['name' => '2026/2027', 'is_active' => true]);
         $user = User::factory()->create(['role' => UserRole::SuperAdmin]);
         $this->actingAs($user)->get(route('dashboard'))->assertOk()->assertSee('Dashboard BK');
+    }
+
+    public function test_dashboard_renders_aggregated_points_when_cases_exist(): void
+    {
+        $year = AcademicYear::create(['name' => '2026/2027', 'is_active' => true]);
+        $user = User::factory()->create(['role' => UserRole::Coordinator]);
+        $student = Student::factory()->create(['name' => 'Siswa Prioritas Uji']);
+        $case = ViolationCase::create([
+            'case_number' => 'UAT-AGG-001',
+            'student_id' => $student->id,
+            'academic_year_id' => $year->id,
+            'created_by' => $user->id,
+            'occurred_at' => now(),
+            'chronology' => 'Kasus uji agregasi dashboard.',
+            'status' => 'open',
+        ]);
+        $case->items()->create([
+            'instrument_code' => 'UAT01',
+            'instrument_name' => 'Instrumen UAT',
+            'points' => 50,
+            'sanction_snapshot' => 'Pembinaan UAT',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Siswa Prioritas Uji')
+            ->assertSee('50');
     }
 }

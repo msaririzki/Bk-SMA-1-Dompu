@@ -79,3 +79,19 @@ php artisan schedule:list
 Lakukan UAT bersama guru BK dengan data contoh. Setelah alur surat, tanda tangan, kelas binaan, serta kategori skor disetujui, baru commit hasil impor data asli dan buat akun siswa per kelas.
 
 Checklist pengujian pengguna tersedia di [`docs/UAT.md`](docs/UAT.md). Setiap push dan pull request juga menjalankan build, formatter, audit dependensi, migrasi/seed MySQL 8.4, dan test aplikasi melalui GitHub Actions.
+
+### Database UAT anonim (lokal)
+
+Gunakan database SQLite terpisah agar pengujian guru BK tidak menyentuh staging data siswa asli. Perintah PowerShell berikut menghapus dan membangun ulang **hanya** `database/uat.sqlite`:
+
+```powershell
+New-Item -ItemType File -Force database\uat.sqlite | Out-Null
+$env:DB_CONNECTION='sqlite'
+$env:DB_DATABASE=(Resolve-Path database\uat.sqlite).Path
+$env:UAT_PASSWORD='<isi-kata-sandi-UAT-lokal>'
+php artisan migrate:fresh --seed
+php artisan db:seed --class=UatSeeder
+php artisan serve --port=8001
+```
+
+Seeder menyediakan akun anonim `uat.koordinator`, `uat.guru1`, `uat.guru2`, serta siswa dengan identitas `0099000001`, `0099000002`, atau `TMP-UAT-003`. Semuanya memakai nilai `UAT_PASSWORD` yang diisi saat menjalankan perintah. Jangan menjalankan `UatSeeder` di produksi dan jangan memakai database utama untuk UAT.
