@@ -40,7 +40,7 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -50,7 +50,7 @@ jobs:
           coverage: none
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: npm
@@ -69,11 +69,17 @@ jobs:
           npm ci
           npm run build
 
-      - name: Check formatting and dependencies
-        run: |
-          vendor/bin/pint --test
-          composer audit --no-interaction
-          npm audit --omit=dev --audit-level=high
+      - name: Check PHP formatting
+        run: vendor/bin/pint --test
+
+      - name: Audit PHP dependencies
+        if: ${{ always() }}
+        run: composer audit --no-interaction
+
+      - name: Audit production frontend dependencies
+        if: ${{ always() }}
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Run application tests
+        if: ${{ always() }}
         run: php artisan test
