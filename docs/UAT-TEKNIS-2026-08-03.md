@@ -23,7 +23,7 @@ Dokumen ini mencatat pemeriksaan teknis dengan database SQLite anonim yang terpi
 - Selesaikan review 36 konflik staging workbook asli: 10 kelas X, 3 kelas XI, dan 23 kelas XII. Jangan commit baris aman sebelum keputusan sekolah dicatat.
 - Konfirmasi kop, logo, nama, jabatan, NIP, redaksi surat, dan pembagian halaman home visit dengan koordinator BK.
 - Uji unggahan foto dari HP sekolah dan satu dokumen PDF contoh pada perangkat yang akan dipakai.
-- Uji pergantian PIN pertama dan mekanisme pembagian PIN melalui jalur tertutup.
+- Uji login tanpa PIN menggunakan NISN, NIS, serta kode sementara untuk kelas X.
 - Lakukan pemulihan backup terenkripsi pada VPS kosong sebelum aktivasi produksi.
 
 Gunakan checklist utama di [`UAT.md`](UAT.md) untuk tanda tangan persetujuan akhir.

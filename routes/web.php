@@ -23,7 +23,7 @@ Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthController::class, 'staffForm'])->name('login');
     Route::post('/login', [AuthController::class, 'staffLogin'])->name('login.store');
     Route::get('/siswa/masuk', [AuthController::class, 'studentForm'])->name('student.login');
-    Route::post('/siswa/masuk', [AuthController::class, 'studentLogin'])->name('student.login.store');
+    Route::post('/siswa/masuk', [AuthController::class, 'studentLogin'])->middleware('throttle:student-login')->name('student.login.store');
 });
 
 Route::middleware('auth')->group(function (): void {

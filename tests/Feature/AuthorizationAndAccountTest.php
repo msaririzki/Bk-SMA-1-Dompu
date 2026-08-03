@@ -84,7 +84,7 @@ class AuthorizationAndAccountTest extends TestCase
         $this->actingAs($coordinator)
             ->get(route('master.index'))
             ->assertOk()
-            ->assertSee('Buat akun portal siswa')
+            ->assertSee('Aktifkan portal siswa')
             ->assertDontSee(route('master.teacher'), false);
 
         $this->actingAs($coordinator)->post(route('master.teacher'), [])->assertForbidden();
@@ -102,7 +102,7 @@ class AuthorizationAndAccountTest extends TestCase
             ->assertSee(route('accounts.update', $admin), false);
     }
 
-    public function test_bulk_account_generation_is_atomic_and_pin_page_is_not_cached(): void
+    public function test_bulk_account_generation_is_atomic_and_access_page_is_not_cached(): void
     {
         $year = AcademicYear::create(['name' => '2026/2027', 'is_active' => true]);
         $class = SchoolClass::create(['academic_year_id' => $year->id, 'name' => 'X-3', 'grade_level' => 'X']);
@@ -112,8 +112,8 @@ class AuthorizationAndAccountTest extends TestCase
 
         $response = $this->actingAs($admin)->post(route('students.accounts'), ['class_id' => $class->id]);
 
-        $response->assertOk()->assertHeader('Cache-Control', 'no-store, private')->assertSee($student->name);
-        $this->assertDatabaseHas('users', ['student_id' => $student->id, 'username' => '0012345678', 'must_change_password' => true]);
+        $response->assertOk()->assertHeader('Cache-Control', 'no-store, private')->assertSee($student->name)->assertDontSee('PIN awal');
+        $this->assertDatabaseHas('users', ['student_id' => $student->id, 'username' => '0012345678', 'must_change_password' => false]);
         $this->assertDatabaseHas('audit_logs', ['action' => 'student_accounts.generated', 'subject_id' => (string) $class->id]);
     }
 

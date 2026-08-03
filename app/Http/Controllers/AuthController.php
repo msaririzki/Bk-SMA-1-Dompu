@@ -6,7 +6,6 @@ use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -39,12 +38,15 @@ class AuthController extends Controller
 
     public function studentLogin(Request $request)
     {
-        $data = $request->validate(['identifier' => 'required|string', 'password' => 'required|string']);
-        $user = User::where('role', UserRole::Student)->where('is_active', true)->where(function ($q) use ($data) {
-            $q->where('username', $data['identifier'])->orWhereHas('student', fn ($s) => $s->where('nis', $data['identifier'])->orWhere('nisn', $data['identifier'])->orWhere('temporary_id', $data['identifier']));
-        })->first();
-        if (! $user || ! Hash::check($data['password'], $user->password)) {
-            throw ValidationException::withMessages(['identifier' => 'Identitas atau PIN tidak sesuai.']);
+        $data = $request->validate(['identifier' => 'required|string|max:50']);
+        $identifier = preg_replace('/\s+/', '', trim($data['identifier']));
+        $user = User::where('role', UserRole::Student)->where('is_active', true)
+            ->whereHas('student', fn ($student) => $student->where('status', 'active'))
+            ->where(function ($q) use ($identifier) {
+                $q->where('username', $identifier)->orWhereHas('student', fn ($s) => $s->where('nis', $identifier)->orWhere('nisn', $identifier)->orWhere('temporary_id', $identifier));
+            })->first();
+        if (! $user) {
+            throw ValidationException::withMessages(['identifier' => 'NISN, NIS, atau kode sementara tidak ditemukan atau belum aktif.']);
         }
         Auth::login($user);
         $request->session()->regenerate();
@@ -64,14 +66,22 @@ class AuthController extends Controller
 
     public function passwordForm()
     {
+        if (request()->user()->role === UserRole::Student) {
+            return redirect()->route('student.portal');
+        }
+
         return view('auth.change-password');
     }
 
     public function changePassword(Request $request)
     {
+        if ($request->user()->role === UserRole::Student) {
+            return redirect()->route('student.portal');
+        }
+
         $data = $request->validate(['password' => 'required|string|min:8|confirmed']);
         $request->user()->update(['password' => $data['password'], 'must_change_password' => false]);
 
-        return redirect($request->user()->role === UserRole::Student ? route('student.portal') : route('dashboard'))->with('success', 'Kata sandi/PIN berhasil diganti.');
+        return redirect()->route('dashboard')->with('success', 'Kata sandi berhasil diganti.');
     }
 }

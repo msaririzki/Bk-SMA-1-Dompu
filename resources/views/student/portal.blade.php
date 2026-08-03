@@ -42,7 +42,7 @@
                     @endforelse
                 </div>
             </section>
-            <div class="mt-6 flex items-start gap-3 rounded-2xl border border-slate-200 bg-white/70 p-4 text-xs leading-5 text-slate-500"><x-icon name="lock" class="mt-0.5 size-4 shrink-0 text-teal-700" /><p>Jaga kerahasiaan PIN Anda dan selalu keluar setelah selesai, terutama saat menggunakan perangkat bersama.</p></div>
+            <div class="mt-6 flex items-start gap-3 rounded-2xl border border-slate-200 bg-white/70 p-4 text-xs leading-5 text-slate-500"><x-icon name="lock" class="mt-0.5 size-4 shrink-0 text-teal-700" /><p>Selalu keluar setelah selesai, terutama saat menggunakan perangkat bersama, agar data Anda tidak dilihat orang lain.</p></div>
         </div>
     </main>
 </body>

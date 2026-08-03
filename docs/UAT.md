@@ -15,9 +15,9 @@ Dokumen ini dipakai bersama guru BK sebelum data nyata dikonfirmasi dan akun sis
 | Skenario | Hasil yang diharapkan | Status |
 |---|---|---|
 | Super admin membuka semua menu | Akun, CMS, audit, impor, instrumen, dan seluruh kasus tersedia | ☐ |
-| Koordinator membuka master data | Dapat mengatur kelas/binaan dan PIN siswa, tetapi tidak membuat/mengubah akun staf | ☐ |
+| Koordinator membuka master data | Dapat mengatur kelas/binaan dan mengaktifkan portal siswa, tetapi tidak membuat/mengubah akun staf | ☐ |
 | Guru BK membuka siswa di luar binaan | Riwayat dapat dilihat, tetapi identitas/kasus tidak dapat diubah kecuali kasus dibuat sendiri | ☐ |
-| Siswa masuk pertama kali | Wajib mengganti PIN awal | ☐ |
+| Siswa masuk | Cukup menggunakan NISN, NIS, atau kode sementara kelas X tanpa PIN | ☐ |
 | Siswa mencoba URL siswa lain/lampiran | Akses ditolak | ☐ |
 | Akun staf dinonaktifkan | Tidak dapat masuk kembali | ☐ |
 
@@ -66,7 +66,7 @@ Target review workbook asli sebelum commit produksi:
 
 ## 7. Persetujuan aktivasi
 
-Produksi baru boleh diaktifkan setelah seluruh temuan prioritas tinggi ditutup, hasil impor ditandatangani penanggung jawab data, contoh PDF disetujui koordinator BK, pemulihan backup berhasil, dan PIN siswa dibagikan melalui jalur tertutup.
+Produksi baru boleh diaktifkan setelah seluruh temuan prioritas tinggi ditutup, hasil impor ditandatangani penanggung jawab data, contoh PDF disetujui koordinator BK, pemulihan backup berhasil, dan kode sementara siswa kelas X dibagikan melalui wali kelas atau Guru BK.
 
 | Peran | Nama/tanda tangan | Tanggal |
 |---|---|---|

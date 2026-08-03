@@ -29,6 +29,67 @@ class AuthenticationAndPrivacyTest extends TestCase
         $this->actingAs($user)->get('/app')->assertForbidden();
     }
 
+    public function test_student_can_login_with_nisn_without_pin(): void
+    {
+        $student = Student::factory()->create(['nisn' => '0012345678']);
+        $user = User::factory()->create(['role' => UserRole::Student, 'student_id' => $student->id, 'must_change_password' => true]);
+
+        $this->post(route('student.login.store'), ['identifier' => '0012345678'])
+            ->assertRedirect(route('student.portal'));
+
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_student_can_login_with_nis_without_pin(): void
+    {
+        $student = Student::factory()->create(['nis' => '12345678', 'nisn' => null]);
+        $user = User::factory()->create(['role' => UserRole::Student, 'student_id' => $student->id]);
+
+        $this->post(route('student.login.store'), ['identifier' => '12345678'])
+            ->assertRedirect(route('student.portal'));
+
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_grade_ten_student_can_login_with_temporary_code_without_pin(): void
+    {
+        $student = Student::factory()->create(['temporary_id' => 'TMP-2627-X1-0001', 'nis' => null, 'nisn' => null]);
+        $user = User::factory()->create(['role' => UserRole::Student, 'student_id' => $student->id]);
+
+        $this->post(route('student.login.store'), ['identifier' => 'TMP-2627-X1-0001'])
+            ->assertRedirect(route('student.portal'));
+
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_unknown_student_identifier_is_rejected_in_indonesian(): void
+    {
+        $this->post(route('student.login.store'), ['identifier' => '0000000000'])
+            ->assertSessionHasErrors(['identifier' => 'NISN, NIS, atau kode sementara tidak ditemukan atau belum aktif.']);
+
+        $this->assertGuest();
+    }
+
+    public function test_inactive_student_cannot_login_by_identifier(): void
+    {
+        $student = Student::factory()->create(['nisn' => '0012345679', 'status' => 'graduated']);
+        User::factory()->create(['role' => UserRole::Student, 'student_id' => $student->id]);
+
+        $this->post(route('student.login.store'), ['identifier' => '0012345679'])
+            ->assertSessionHasErrors('identifier');
+
+        $this->assertGuest();
+    }
+
+    public function test_student_login_form_does_not_request_a_pin(): void
+    {
+        $this->get(route('student.login'))
+            ->assertOk()
+            ->assertSee('NISN / NIS / Kode sementara kelas X')
+            ->assertDontSee('name="password"', false)
+            ->assertDontSee('PIN pribadi');
+    }
+
     public function test_student_portal_only_uses_attached_student(): void
     {
         $year = AcademicYear::create(['name' => '2026/2027', 'is_active' => true]);

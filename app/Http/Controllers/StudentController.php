@@ -12,7 +12,7 @@ use App\Services\ScoringService;
 use App\Services\StudentIdentityService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class StudentController extends Controller
@@ -65,9 +65,8 @@ class StudentController extends Controller
                 if (User::where('username', $username)->exists()) {
                     throw ValidationException::withMessages(['class_id' => "Identitas masuk {$username} sudah digunakan akun lain. Periksa data siswa sebelum membuat akun."]);
                 }
-                $pin = (string) random_int(10000000, 99999999);
-                User::create(['name' => $student->name, 'username' => $username, 'role' => UserRole::Student, 'student_id' => $student->id, 'password' => Hash::make($pin), 'must_change_password' => true, 'is_active' => true]);
-                $credentials[] = ['name' => $student->name, 'username' => $username, 'pin' => $pin];
+                User::create(['name' => $student->name, 'username' => $username, 'role' => UserRole::Student, 'student_id' => $student->id, 'password' => Str::random(64), 'must_change_password' => false, 'is_active' => true]);
+                $credentials[] = ['name' => $student->name, 'username' => $username];
             }
 
             return $credentials;
