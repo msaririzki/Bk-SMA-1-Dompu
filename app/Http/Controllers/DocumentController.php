@@ -25,18 +25,21 @@ class DocumentController extends Controller
 
     public function create(Request $r)
     {
-        $selectedStudent = $r->student ? Student::findOrFail($r->student) : null;
-        $selectedCase = $r->case ? ViolationCase::findOrFail($r->case) : null;
+        $selectedStudentId = old('student_id', $r->student);
+        $selectedStudent = $selectedStudentId
+            ? Student::with('currentEnrollment.schoolClass')->findOrFail($selectedStudentId)
+            : null;
+        $selectedCaseId = old('case_id', $r->case);
+        $selectedCase = $selectedCaseId ? ViolationCase::findOrFail($selectedCaseId) : null;
         if ($selectedStudent) {
             $this->authorize('update', $selectedStudent);
         }
         if ($selectedCase) {
             $this->authorize('update', $selectedCase);
         }
-        $students = Student::orderBy('name')->get()->filter(fn (Student $student) => $r->user()->can('update', $student))->values();
         $cases = ViolationCase::with('student')->latest()->get()->filter(fn (ViolationCase $case) => $r->user()->can('update', $case))->values();
 
-        return view('app.documents.create', ['students' => $students, 'cases' => $cases, 'types' => DocumentType::cases(), 'selectedStudent' => $selectedStudent?->id, 'selectedCase' => $selectedCase?->id]);
+        return view('app.documents.create', ['cases' => $cases, 'types' => DocumentType::cases(), 'selectedStudent' => $selectedStudent, 'selectedCase' => $selectedCase?->id]);
     }
 
     public function store(Request $r, AuditService $audit)
@@ -64,17 +67,13 @@ class DocumentController extends Controller
 
     public function homeVisitForm(Request $r)
     {
-        $student = $r->student ? Student::with('currentEnrollment.schoolClass')->find($r->student) : null;
+        $selectedStudentId = old('student_id', $r->student);
+        $student = $selectedStudentId ? Student::with('currentEnrollment.schoolClass')->findOrFail($selectedStudentId) : null;
         if ($student) {
             $this->authorize('update', $student);
         }
-        $students = Student::with('currentEnrollment.schoolClass')
-            ->orderBy('name')
-            ->get()
-            ->filter(fn (Student $candidate) => $r->user()->can('update', $candidate))
-            ->values();
 
-        return view('app.documents.home-visit', ['students' => $students, 'student' => $student, 'teachers' => Teacher::orderBy('name')->get()]);
+        return view('app.documents.home-visit', ['student' => $student, 'teachers' => Teacher::orderBy('name')->get()]);
     }
 
     public function homeVisitStore(Request $r, AuditService $audit)

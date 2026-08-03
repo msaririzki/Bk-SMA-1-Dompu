@@ -22,8 +22,8 @@ class AuthorizationAndAccountTest extends TestCase
         $year = AcademicYear::create(['name' => '2026/2027', 'is_active' => true]);
         $assignedClass = SchoolClass::create(['academic_year_id' => $year->id, 'name' => 'X-1', 'grade_level' => 'X']);
         $otherClass = SchoolClass::create(['academic_year_id' => $year->id, 'name' => 'X-2', 'grade_level' => 'X']);
-        $assignedStudent = Student::factory()->create();
-        $otherStudent = Student::factory()->create();
+        $assignedStudent = Student::factory()->create(['name' => 'Nabila Putri Dompu', 'normalized_name' => 'NABILA PUTRI DOMPU']);
+        $otherStudent = Student::factory()->create(['name' => 'Nabila Putri Bima', 'normalized_name' => 'NABILA PUTRI BIMA']);
         Enrollment::create(['student_id' => $assignedStudent->id, 'academic_year_id' => $year->id, 'class_id' => $assignedClass->id]);
         Enrollment::create(['student_id' => $otherStudent->id, 'academic_year_id' => $year->id, 'class_id' => $otherClass->id]);
 
@@ -49,13 +49,20 @@ class AuthorizationAndAccountTest extends TestCase
         $this->actingAs($user)
             ->get(route('cases.create'))
             ->assertOk()
-            ->assertSee($assignedStudent->name)
+            ->assertSee('data-student-autocomplete', false)
+            ->assertDontSee($assignedStudent->name)
             ->assertDontSee($otherStudent->name);
+        $this->actingAs($user)
+            ->getJson(route('students.search', ['q' => 'Nabila']))
+            ->assertOk()
+            ->assertJsonFragment(['id' => $assignedStudent->id, 'name' => $assignedStudent->name])
+            ->assertJsonMissing(['id' => $otherStudent->id, 'name' => $otherStudent->name]);
         $this->actingAs($user)->get(route('cases.create', ['student' => $otherStudent->id]))->assertForbidden();
         $this->actingAs($user)
             ->get(route('documents.create'))
             ->assertOk()
-            ->assertSee($assignedStudent->name)
+            ->assertSee('data-student-autocomplete', false)
+            ->assertDontSee($assignedStudent->name)
             ->assertDontSee($otherStudent->name);
         $this->actingAs($user)->get(route('documents.create', ['student' => $otherStudent->id]))->assertForbidden();
         $this->actingAs($user)->get(route('home-visits.create', ['student' => $otherStudent->id]))->assertForbidden();

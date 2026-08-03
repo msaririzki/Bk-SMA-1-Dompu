@@ -39,6 +39,9 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/', DashboardController::class)->name('dashboard');
 
         Route::get('/siswa', [StudentController::class, 'index'])->name('students.index');
+        Route::get('/siswa/cari', [StudentController::class, 'search'])
+            ->middleware('throttle:120,1')
+            ->name('students.search');
         Route::get('/siswa/{student}', [StudentController::class, 'show'])->name('students.show');
         Route::put('/siswa/{student}', [StudentController::class, 'update'])->name('students.update');
         Route::get('/siswa/{student}/rekap', [DocumentController::class, 'recap'])->name('students.recap');

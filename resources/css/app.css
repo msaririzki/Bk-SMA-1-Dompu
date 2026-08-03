@@ -103,6 +103,14 @@
     textarea.form-control { @apply leading-6; }
     input[type='file'].form-control { @apply cursor-pointer py-2 file:mr-3 file:rounded-lg file:border-0 file:bg-teal-50 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-teal-700; }
     .field-help { @apply mt-2 flex items-start gap-1.5 text-xs leading-5 text-slate-400; }
+    .student-autocomplete { @apply relative; }
+    .student-search-results { @apply absolute left-0 right-0 z-50 mt-2 max-h-72 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-2xl shadow-slate-900/15; }
+    .student-search-option { @apply flex w-full flex-col rounded-xl px-3.5 py-3 text-left transition hover:bg-teal-50 focus:bg-teal-50; }
+    .student-search-option.is-active { @apply bg-teal-50 ring-1 ring-inset ring-teal-100; }
+    .student-search-name { @apply text-sm font-extrabold text-slate-900; }
+    .student-search-meta { @apply mt-1 text-xs font-medium text-slate-500; }
+    .student-search-message { @apply px-3.5 py-4 text-sm leading-6 text-slate-500; }
+    .student-search-spinner { @apply pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 animate-spin rounded-full border-2 border-slate-200 border-t-teal-600; }
 
     .badge { @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset; }
     .badge-slate { @apply bg-slate-100 text-slate-700 ring-slate-200; }

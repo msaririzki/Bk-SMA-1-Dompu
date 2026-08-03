@@ -28,6 +28,54 @@ class StudentController extends Controller
         return view('app.students.index', ['students' => $students, 'classes' => SchoolClass::with('academicYear')->orderBy('name')->get()]);
     }
 
+    public function search(Request $request, StudentIdentityService $identity)
+    {
+        $data = $request->validate([
+            'q' => ['required', 'string', 'min:2', 'max:100'],
+        ]);
+        $term = trim($data['q']);
+        $normalizedTerm = $identity->normalizeName($term);
+        $user = $request->user();
+
+        $students = Student::query()
+            ->with('currentEnrollment.schoolClass')
+            ->where('status', 'active')
+            ->when($user->role === UserRole::Counselor, function ($query) use ($user): void {
+                $classIds = $user->teacher?->assignedClasses()->pluck('classes.id') ?? collect();
+                $query->whereHas('currentEnrollment', fn ($enrollment) => $enrollment->whereIn('class_id', $classIds));
+            })
+            ->where(function ($query) use ($term, $normalizedTerm): void {
+                $query->where('name', 'like', "%{$term}%")
+                    ->orWhere('normalized_name', 'like', "%{$normalizedTerm}%")
+                    ->orWhere('nis', 'like', "%{$term}%")
+                    ->orWhere('nisn', 'like', "%{$term}%")
+                    ->orWhere('temporary_id', 'like', "%{$term}%")
+                    ->orWhereHas('aliases', fn ($alias) => $alias->where('name', 'like', "%{$term}%"));
+            })
+            ->orderBy('name')
+            ->limit(20)
+            ->get()
+            ->map(function (Student $student): array {
+                $identifier = $student->nisn
+                    ? ['label' => 'NISN', 'value' => $student->nisn]
+                    : ($student->nis
+                        ? ['label' => 'NIS', 'value' => $student->nis]
+                        : ['label' => 'ID sementara', 'value' => $student->temporary_id]);
+
+                return [
+                    'id' => $student->id,
+                    'name' => $student->name,
+                    'class_name' => $student->currentEnrollment?->schoolClass?->name ?? 'Tanpa kelas',
+                    'identifier_label' => $identifier['label'],
+                    'identifier' => $identifier['value'],
+                ];
+            });
+
+        return response()
+            ->json(['results' => $students])
+            ->header('Cache-Control', 'no-store, private');
+    }
+
     public function show(Student $student, ScoringService $scoring)
     {
         $this->authorize('view', $student);

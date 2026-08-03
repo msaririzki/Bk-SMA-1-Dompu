@@ -5,8 +5,8 @@
     <div><p class="page-eyebrow"><x-icon name="students" class="size-4" /> Direktori sekolah</p><h1 class="page-title">Data siswa</h1><p class="page-description">Temukan siswa dengan cepat melalui nama, NIS, NISN, ID sementara, kelas, atau status.</p></div>
     @if(auth()->user()->hasRole(\App\Enums\UserRole::SuperAdmin, \App\Enums\UserRole::Coordinator))<a class="btn btn-secondary" href="{{ route('imports.index') }}"><x-icon name="upload" /> Impor Excel</a>@endif
 </header>
-<form class="card card-body mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(280px,1fr)_240px_180px_auto]">
-    <div><label class="form-label" for="student-search">Cari siswa</label><div class="input-with-icon"><x-icon name="search" /><input id="student-search" class="form-control" name="q" value="{{ request('q') }}" placeholder="Nama, NIS, NISN, atau ID sementara"></div></div>
+<form data-auto-filter-form class="card card-body mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(280px,1fr)_240px_180px_auto]">
+    <div><label class="form-label" for="student-search">Cari siswa</label><div class="input-with-icon"><x-icon name="search" /><input id="student-search" class="form-control" name="q" value="{{ request('q') }}" placeholder="Ketik sebagian nama, NIS, NISN, atau ID..."></div><p class="field-help">Hasil diperbarui otomatis saat Anda mengetik.</p></div>
     <div><label class="form-label" for="class_id">Kelas</label><select id="class_id" class="form-select" name="class_id"><option value="">Semua kelas</option>@foreach($classes as $class)<option value="{{ $class->id }}" @selected(request('class_id') == $class->id)>{{ $class->name }} — {{ $class->academicYear->name }}</option>@endforeach</select></div>
     <div><label class="form-label" for="student-status">Status</label><select id="student-status" class="form-select" name="status"><option value="">Semua status</option>@foreach(\App\Enums\StudentStatus::cases() as $status)<option value="{{ $status->value }}" @selected(request('status') === $status->value)>{{ $status->label() }}</option>@endforeach</select></div>
     <button class="btn btn-primary self-end"><x-icon name="search" /> Cari siswa</button>

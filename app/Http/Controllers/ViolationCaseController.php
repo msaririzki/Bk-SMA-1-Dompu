@@ -34,18 +34,15 @@ class ViolationCaseController extends Controller
 
     public function create(Request $r)
     {
-        $selectedStudent = $r->student ? Student::findOrFail($r->student) : null;
+        $selectedStudentId = old('student_id', $r->student);
+        $selectedStudent = $selectedStudentId
+            ? Student::with('currentEnrollment.schoolClass')->findOrFail($selectedStudentId)
+            : null;
         if ($selectedStudent) {
             $this->authorize('update', $selectedStudent);
         }
-        $students = Student::with('currentEnrollment.schoolClass')
-            ->where('status', 'active')
-            ->orderBy('name')
-            ->get()
-            ->filter(fn (Student $student) => $r->user()->can('update', $student))
-            ->values();
 
-        return view('app.cases.create', ['selectedStudent' => $selectedStudent, 'students' => $students, 'categories' => ViolationCategory::with(['instruments' => fn ($q) => $q->where('is_active', true)->orderBy('sort_order')])->orderBy('sort_order')->get()]);
+        return view('app.cases.create', ['selectedStudent' => $selectedStudent, 'categories' => ViolationCategory::with(['instruments' => fn ($q) => $q->where('is_active', true)->orderBy('sort_order')])->orderBy('sort_order')->get()]);
     }
 
     public function store(Request $r, AuditService $audit, AttachmentService $attachments)
