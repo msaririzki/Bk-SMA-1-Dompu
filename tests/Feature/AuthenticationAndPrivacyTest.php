@@ -32,12 +32,14 @@ class AuthenticationAndPrivacyTest extends TestCase
     public function test_student_can_login_with_nisn_without_pin(): void
     {
         $student = Student::factory()->create(['nisn' => '0012345678']);
-        $user = User::factory()->create(['role' => UserRole::Student, 'student_id' => $student->id, 'must_change_password' => true]);
 
         $this->post(route('student.login.store'), ['identifier' => '0012345678'])
             ->assertRedirect(route('student.portal'));
 
+        $user = User::where('student_id', $student->id)->firstOrFail();
         $this->assertAuthenticatedAs($user);
+        $this->assertFalse($user->must_change_password);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'student_account.auto_created', 'subject_id' => (string) $user->id]);
     }
 
     public function test_student_can_login_with_nis_without_pin(): void
@@ -54,11 +56,11 @@ class AuthenticationAndPrivacyTest extends TestCase
     public function test_grade_ten_student_can_login_with_temporary_code_without_pin(): void
     {
         $student = Student::factory()->create(['temporary_id' => 'TMP-2627-X1-0001', 'nis' => null, 'nisn' => null]);
-        $user = User::factory()->create(['role' => UserRole::Student, 'student_id' => $student->id]);
 
         $this->post(route('student.login.store'), ['identifier' => 'TMP-2627-X1-0001'])
             ->assertRedirect(route('student.portal'));
 
+        $user = User::where('student_id', $student->id)->firstOrFail();
         $this->assertAuthenticatedAs($user);
     }
 

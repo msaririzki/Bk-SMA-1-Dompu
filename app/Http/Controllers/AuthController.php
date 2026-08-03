@@ -3,9 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Enums\UserRole;
+use App\Models\Student;
 use App\Models\User;
+use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -36,21 +40,55 @@ class AuthController extends Controller
         return redirect()->intended(route('dashboard'));
     }
 
-    public function studentLogin(Request $request)
+    public function studentLogin(Request $request, AuditService $audit)
     {
         $data = $request->validate(['identifier' => 'required|string|max:50']);
         $identifier = preg_replace('/\s+/', '', trim($data['identifier']));
-        $user = User::where('role', UserRole::Student)->where('is_active', true)
-            ->whereHas('student', fn ($student) => $student->where('status', 'active'))
-            ->where(function ($q) use ($identifier) {
-                $q->where('username', $identifier)->orWhereHas('student', fn ($s) => $s->where('nis', $identifier)->orWhere('nisn', $identifier)->orWhere('temporary_id', $identifier));
-            })->first();
-        if (! $user) {
+        $student = Student::where('status', 'active')->where(function ($query) use ($identifier) {
+            $query->where('nis', $identifier)->orWhere('nisn', $identifier)->orWhere('temporary_id', $identifier);
+        })->first();
+        if (! $student) {
             throw ValidationException::withMessages(['identifier' => 'NISN, NIS, atau kode sementara tidak ditemukan atau belum aktif.']);
         }
+
+        $created = false;
+        $user = DB::transaction(function () use ($student, &$created) {
+            $lockedStudent = Student::whereKey($student->id)->lockForUpdate()->firstOrFail();
+            $account = $lockedStudent->account()->first();
+            if ($account) {
+                return $account;
+            }
+
+            $username = $lockedStudent->nisn ?: ($lockedStudent->nis ?: $lockedStudent->temporary_id);
+            if (User::where('username', $username)->exists()) {
+                return null;
+            }
+
+            $created = true;
+
+            return User::create([
+                'name' => $lockedStudent->name,
+                'username' => $username,
+                'role' => UserRole::Student,
+                'student_id' => $lockedStudent->id,
+                'password' => Str::random(64),
+                'must_change_password' => false,
+                'is_active' => true,
+            ]);
+        });
+        if (! $user?->is_active || $user->role !== UserRole::Student) {
+            throw ValidationException::withMessages(['identifier' => 'NISN, NIS, atau kode sementara tidak ditemukan atau belum aktif.']);
+        }
+
         Auth::login($user);
         $request->session()->regenerate();
         $user->update(['last_login_at' => now()]);
+        if ($created) {
+            $audit->record('student_account.auto_created', $user, null, [
+                'student_id' => $student->id,
+                'username' => $user->username,
+            ]);
+        }
 
         return redirect()->route('student.portal');
     }

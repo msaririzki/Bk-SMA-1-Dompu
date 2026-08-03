@@ -54,24 +54,27 @@ class StudentController extends Controller
         abort_unless($request->user()->hasRole(UserRole::SuperAdmin, UserRole::Coordinator), 403);
         $data = $request->validate(['class_id' => 'required|exists:classes,id']);
         $class = SchoolClass::findOrFail($data['class_id']);
-        $credentials = DB::transaction(function () use ($class) {
+        $result = DB::transaction(function () use ($class) {
             SchoolClass::whereKey($class->id)->lockForUpdate()->firstOrFail();
             $credentials = [];
+            $created = 0;
             foreach ($class->enrollments()->with('student.account')->get() as $enrollment) {
                 $student = $enrollment->student;
-                if ($student->account) {
-                    continue;
-                }$username = $student->nisn ?: ($student->nis ?: $student->temporary_id);
-                if (User::where('username', $username)->exists()) {
-                    throw ValidationException::withMessages(['class_id' => "Identitas masuk {$username} sudah digunakan akun lain. Periksa data siswa sebelum membuat akun."]);
+                $username = $student->nisn ?: ($student->nis ?: $student->temporary_id);
+                if (! $student->account) {
+                    if (User::where('username', $username)->exists()) {
+                        throw ValidationException::withMessages(['class_id' => "Identitas masuk {$username} sudah digunakan akun lain. Periksa data siswa sebelum membuat akun."]);
+                    }
+                    User::create(['name' => $student->name, 'username' => $username, 'role' => UserRole::Student, 'student_id' => $student->id, 'password' => Str::random(64), 'must_change_password' => false, 'is_active' => true]);
+                    $created++;
                 }
-                User::create(['name' => $student->name, 'username' => $username, 'role' => UserRole::Student, 'student_id' => $student->id, 'password' => Str::random(64), 'must_change_password' => false, 'is_active' => true]);
                 $credentials[] = ['name' => $student->name, 'username' => $username];
             }
 
-            return $credentials;
+            return compact('credentials', 'created');
         });
-        $audit->record('student_accounts.generated', $class, null, ['class_id' => $class->id, 'total' => count($credentials)]);
+        $audit->record('student_accounts.generated', $class, null, ['class_id' => $class->id, 'created' => $result['created'], 'listed' => count($result['credentials'])]);
+        $credentials = $result['credentials'];
 
         return response()
             ->view('app.students.credentials', compact('credentials', 'class'))

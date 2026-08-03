@@ -84,7 +84,7 @@ class AuthorizationAndAccountTest extends TestCase
         $this->actingAs($coordinator)
             ->get(route('master.index'))
             ->assertOk()
-            ->assertSee('Aktifkan portal siswa')
+            ->assertSee('Daftar akses portal siswa')
             ->assertDontSee(route('master.teacher'), false);
 
         $this->actingAs($coordinator)->post(route('master.teacher'), [])->assertForbidden();
