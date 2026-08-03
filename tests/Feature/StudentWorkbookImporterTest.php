@@ -79,7 +79,7 @@ class StudentWorkbookImporterTest extends TestCase
         $upload = new UploadedFile($path, 'XII GANJIL 20262027.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
         $batch = app(StudentWorkbookImporter::class)->stage($upload, $year, $user->id);
         $this->assertSame(1, $batch->conflict_rows);
-        $row = $batch->rows()->where('sheet_name','SAINS 1')->first();
-        $this->assertSame('XII-SAINS 1',$row->normalized_payload['class_name']);
+        $row = $batch->rows()->where('sheet_name', 'SAINS 1')->first();
+        $this->assertSame('XII-SAINS 1', $row->normalized_payload['class_name']);
     }
 }

@@ -52,6 +52,6 @@ class StudentImportController extends Controller
 
     public function template(StudentWorkbookImporter $importer)
     {
-        return response()->download($importer->template(),'template-data-siswa.xlsx');
+        return response()->download($importer->template(), 'template-data-siswa.xlsx');
     }
 }

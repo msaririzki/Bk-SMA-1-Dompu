@@ -51,6 +51,6 @@ class InstrumentController extends Controller
         DB::transaction(fn () => $sorted->each(fn ($row) => SeverityLevel::find($row['id'])->update(['name' => $row['name'], 'min_points' => $row['min_points'], 'max_points' => $row['max_points']])));
         $audit->record('severity_levels.updated', null, $before, SeverityLevel::orderBy('min_points')->get()->toArray());
 
-        return back()->with('success','Kategori skor diperbarui.');
+        return back()->with('success', 'Kategori skor diperbarui.');
     }
 }
