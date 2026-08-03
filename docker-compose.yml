@@ -1,4 +1,10 @@
 name: bk-sman1-dompu
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   app:
     image: bk-app:latest
@@ -15,6 +21,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    logging: *default-logging
     restart: unless-stopped
 
   queue:
@@ -31,6 +38,7 @@ services:
     depends_on:
       app:
         condition: service_started
+    logging: *default-logging
     restart: unless-stopped
 
   scheduler:
@@ -47,6 +55,7 @@ services:
     depends_on:
       app:
         condition: service_started
+    logging: *default-logging
     restart: unless-stopped
 
   web:
@@ -59,6 +68,7 @@ services:
       - app_storage:/var/www/html/storage:ro
     depends_on:
       - app
+    logging: *default-logging
     restart: unless-stopped
 
   db:
@@ -78,6 +88,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
+    logging: *default-logging
     restart: unless-stopped
 
 volumes:
