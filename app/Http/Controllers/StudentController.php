@@ -11,7 +11,9 @@ use App\Services\AuditService;
 use App\Services\ScoringService;
 use App\Services\StudentIdentityService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class StudentController extends Controller
 {
@@ -47,22 +49,33 @@ class StudentController extends Controller
         return back()->with('success', 'Data siswa diperbarui.');
     }
 
-    public function generateAccounts(Request $request)
+    public function generateAccounts(Request $request, AuditService $audit)
     {
         abort_unless($request->user()->hasRole(UserRole::SuperAdmin, UserRole::Coordinator), 403);
         $data = $request->validate(['class_id' => 'required|exists:classes,id']);
         $class = SchoolClass::findOrFail($data['class_id']);
-        $credentials = [];
-        foreach ($class->enrollments()->with('student.account')->get() as $enrollment) {
-            $student = $enrollment->student;
-            if ($student->account) {
-                continue;
-            }$username = $student->nisn ?: ($student->nis ?: $student->temporary_id);
-            $pin = (string) random_int(10000000, 99999999);
-            User::create(['name' => $student->name, 'username' => $username, 'role' => UserRole::Student, 'student_id' => $student->id, 'password' => Hash::make($pin), 'must_change_password' => true, 'is_active' => true]);
-            $credentials[] = ['name' => $student->name, 'username' => $username, 'pin' => $pin];
-        }
+        $credentials = DB::transaction(function () use ($class) {
+            SchoolClass::whereKey($class->id)->lockForUpdate()->firstOrFail();
+            $credentials = [];
+            foreach ($class->enrollments()->with('student.account')->get() as $enrollment) {
+                $student = $enrollment->student;
+                if ($student->account) {
+                    continue;
+                }$username = $student->nisn ?: ($student->nis ?: $student->temporary_id);
+                if (User::where('username', $username)->exists()) {
+                    throw ValidationException::withMessages(['class_id' => "Identitas masuk {$username} sudah digunakan akun lain. Periksa data siswa sebelum membuat akun."]);
+                }
+                $pin = (string) random_int(10000000, 99999999);
+                User::create(['name' => $student->name, 'username' => $username, 'role' => UserRole::Student, 'student_id' => $student->id, 'password' => Hash::make($pin), 'must_change_password' => true, 'is_active' => true]);
+                $credentials[] = ['name' => $student->name, 'username' => $username, 'pin' => $pin];
+            }
 
-        return view('app.students.credentials',compact('credentials','class'));
+            return $credentials;
+        });
+        $audit->record('student_accounts.generated', $class, null, ['class_id' => $class->id, 'total' => count($credentials)]);
+
+        return response()
+            ->view('app.students.credentials', compact('credentials', 'class'))
+            ->header('Cache-Control', 'no-store, private');
     }
 }

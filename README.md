@@ -77,3 +77,5 @@ php artisan schedule:list
 ```
 
 Lakukan UAT bersama guru BK dengan data contoh. Setelah alur surat, tanda tangan, kelas binaan, serta kategori skor disetujui, baru commit hasil impor data asli dan buat akun siswa per kelas.
+
+Checklist pengujian pengguna tersedia di [`docs/UAT.md`](docs/UAT.md). Setiap push dan pull request juga menjalankan build, formatter, audit dependensi, migrasi/seed MySQL 8.4, dan test aplikasi melalui GitHub Actions.

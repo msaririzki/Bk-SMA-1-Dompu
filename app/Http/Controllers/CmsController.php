@@ -70,8 +70,8 @@ class CmsController extends Controller
 
     private function sanitize(string $html): string
     {
-        $html = strip_tags($html,'<p><br><h2><h3><strong><em><ul><ol><li><blockquote>');
+        $html = strip_tags($html, '<p><br><h2><h3><strong><em><ul><ol><li><blockquote>');
 
-        return preg_replace('/\s+on\w+\s*=\s*(["\']).*?\1/i','',$html);
+        return preg_replace('/<\s*([a-z0-9]+)\b[^>]*>/i', '<$1>', $html);
     }
 }

@@ -15,23 +15,25 @@ class MasterDataController extends Controller
 {
     public function index()
     {
-        return view('app.master.index', ['years' => AcademicYear::orderByDesc('name')->get(), 'classes' => SchoolClass::with(['academicYear', 'homeroomTeacher'])->orderBy('name')->get(), 'teachers' => Teacher::with('user')->orderBy('name')->get(), 'users' => User::where('role', '!=', 'student')->orderBy('name')->get()]);
+        return view('app.master.index', ['years' => AcademicYear::orderByDesc('name')->get(), 'classes' => SchoolClass::with(['academicYear', 'homeroomTeacher'])->orderBy('name')->get(), 'teachers' => Teacher::with(['user', 'assignedClasses'])->orderBy('name')->get(), 'users' => User::where('role', '!=', 'student')->orderBy('name')->get()]);
     }
 
-    public function year(Request $r)
+    public function year(Request $r, AuditService $audit)
     {
         $d = $r->validate(['name' => 'required|string|max:20|unique:academic_years,name', 'is_active' => 'nullable|boolean']);
         if ($r->boolean('is_active')) {
             AcademicYear::query()->update(['is_active' => false]);
-        }AcademicYear::create($d + ['is_active' => $r->boolean('is_active')]);
+        }$year = AcademicYear::create($d + ['is_active' => $r->boolean('is_active')]);
+        $audit->record('academic_year.created', $year, null, $year->toArray());
 
         return back()->with('success', 'Tahun pelajaran ditambahkan.');
     }
 
-    public function classStore(Request $r)
+    public function classStore(Request $r, AuditService $audit)
     {
         $d = $r->validate(['academic_year_id' => 'required|exists:academic_years,id', 'name' => 'required|string|max:100', 'grade_level' => 'required|in:X,XI,XII', 'track' => 'nullable|string|max:32', 'group_number' => 'nullable|integer|min:1', 'homeroom_teacher_id' => 'nullable|exists:teachers,id']);
-        SchoolClass::create($d);
+        $class = SchoolClass::create($d);
+        $audit->record('class.created', $class, null, $class->toArray());
 
         return back()->with('success', 'Kelas ditambahkan.');
     }
@@ -51,10 +53,13 @@ class MasterDataController extends Controller
         return back()->with('success', 'Akun guru BK dibuat.');
     }
 
-    public function assign(Request $r)
+    public function assign(Request $r, AuditService $audit)
     {
         $d = $r->validate(['teacher_id' => 'required|exists:teachers,id', 'class_ids' => 'nullable|array', 'class_ids.*' => 'exists:classes,id']);
-        Teacher::findOrFail($d['teacher_id'])->assignedClasses()->sync($d['class_ids'] ?? []);
+        $teacher = Teacher::findOrFail($d['teacher_id']);
+        $before = $teacher->assignedClasses()->pluck('classes.id')->all();
+        $teacher->assignedClasses()->sync($d['class_ids'] ?? []);
+        $audit->record('counselor_assignment.updated', $teacher, ['class_ids' => $before], ['class_ids' => $d['class_ids'] ?? []]);
 
         return back()->with('success', 'Kelas binaan diperbarui.');
     }
@@ -75,6 +80,6 @@ class MasterDataController extends Controller
         }$user->update($payload);
         $audit->record('account.updated', $user, $before, $user->fresh()->toArray());
 
-        return back()->with('success','Akun diperbarui.');
+        return back()->with('success', 'Akun diperbarui.');
     }
 }

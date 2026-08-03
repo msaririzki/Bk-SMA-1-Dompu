@@ -15,6 +15,7 @@ use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ViolationCaseController extends Controller
 {
@@ -44,15 +45,21 @@ class ViolationCaseController extends Controller
         $year = AcademicYear::active();
         abort_unless($year, 422, 'Tahun pelajaran aktif belum ditentukan.');
         $case = DB::transaction(function () use ($d, $r, $year, $attachments) {
-            $sequence = ViolationCase::whereYear('created_at', now()->year)->count() + 1;
-            $case = ViolationCase::create(['case_number' => sprintf('BK-%s-%05d', now()->format('Y'), $sequence), 'student_id' => $d['student_id'], 'academic_year_id' => $year->id, 'created_by' => $r->user()->id, 'occurred_at' => $d['occurred_at'], 'location' => $d['location'] ?? null, 'chronology' => $d['chronology'], 'status' => CaseStatus::Open]);
+            AcademicYear::whereKey($year->id)->lockForUpdate()->firstOrFail();
+            $prefix = 'BK-'.now()->format('Y').'-';
+            $lastNumber = ViolationCase::withTrashed()
+                ->where('case_number', 'like', $prefix.'%')
+                ->orderByDesc('case_number')
+                ->value('case_number');
+            $sequence = $lastNumber ? ((int) Str::afterLast($lastNumber, '-')) + 1 : 1;
+            $case = ViolationCase::create(['case_number' => $prefix.sprintf('%05d', $sequence), 'student_id' => $d['student_id'], 'academic_year_id' => $year->id, 'created_by' => $r->user()->id, 'occurred_at' => $d['occurred_at'], 'location' => $d['location'] ?? null, 'chronology' => $d['chronology'], 'status' => CaseStatus::Open]);
             foreach (ViolationInstrument::whereIn('id', $d['instrument_ids'])->get() as $instrument) {
                 $case->items()->create(['instrument_id' => $instrument->id, 'instrument_code' => $instrument->code, 'instrument_name' => $instrument->name, 'points' => $instrument->points, 'sanction_snapshot' => $instrument->sanction]);
             }foreach ($r->file('attachments', []) as $file) {
                 $attachments->store($file, $case, $r->user());
             }
 
-return $case;
+            return $case;
         });
         $audit->record('case.created', $case, null, $case->load('items')->toArray());
 
@@ -97,9 +104,9 @@ return $case;
         $path = $thumbnail ? $attachment->thumbnail_path : $attachment->path;
         abort_unless(Storage::disk($attachment->disk)->exists($path), 404);
         if ($thumbnail) {
-            return Storage::disk($attachment->disk)->response($path,null,['Content-Type' => $attachment->mime_type, 'Cache-Control' => 'private, max-age=600']);
+            return Storage::disk($attachment->disk)->response($path, null, ['Content-Type' => $attachment->mime_type, 'Cache-Control' => 'private, max-age=600']);
         }
 
-return Storage::disk($attachment->disk)->download($path,$attachment->original_name,['Content-Type' => $attachment->mime_type]);
+        return Storage::disk($attachment->disk)->download($path, $attachment->original_name, ['Content-Type' => $attachment->mime_type]);
     }
 }

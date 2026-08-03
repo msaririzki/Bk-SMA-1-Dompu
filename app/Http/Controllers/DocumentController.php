@@ -97,6 +97,7 @@ class DocumentController extends Controller
     {
         $this->authorize('view', $student);
         $year = AcademicYear::active();
+        abort_unless($year, 422, 'Tahun pelajaran aktif belum ditentukan.');
         $student->load(['currentEnrollment.schoolClass', 'cases' => fn ($q) => $q->with('items')->where('academic_year_id', $year->id)->where('status', '!=', 'cancelled')->orderBy('occurred_at')]);
         $html = view('pdf.recap', ['student' => $student, 'year' => $year, 'settings' => SchoolSetting::pluck('value', 'key')])->render();
         $dompdf = new Dompdf;
@@ -104,6 +105,6 @@ class DocumentController extends Controller
         $dompdf->setPaper('A4');
         $dompdf->render();
 
-        return response($dompdf->output(),200,['Content-Type' => 'application/pdf', 'Content-Disposition' => 'attachment; filename="rekap-'.$student->temporary_id.'.pdf"']);
+        return response($dompdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'attachment; filename="rekap-'.$student->temporary_id.'.pdf"']);
     }
 }

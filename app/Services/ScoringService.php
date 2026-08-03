@@ -10,7 +10,10 @@ class ScoringService
     public function summary(Student $student, int $academicYearId): array
     {
         $points = $student->pointsForYear($academicYearId);
-        $threshold = (int) (SeverityLevel::max('max_points') ?: SeverityLevel::max('min_points') ?: 100);
+        $threshold = max(
+            (int) SeverityLevel::max('max_points'),
+            (int) SeverityLevel::max('min_points'),
+        );
         $threshold = max(100, $threshold);
 
         return [

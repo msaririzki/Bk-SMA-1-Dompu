@@ -111,7 +111,7 @@ class StudentWorkbookImporter
             }
         }
 
-return $map;
+        return $map;
     }
 
     private function cell(array $row, array $columns, string $key): mixed
@@ -152,8 +152,8 @@ return $map;
     public function commit(ImportBatch $batch): int
     {
         abort_if($batch->status === 'committed', 422, 'Batch sudah pernah dikomit.');
-        $year = AcademicYear::findOrFail($batch->academic_year_id);
-        $count = DB::transaction(function () use ($batch, $year) {
+        $count = DB::transaction(function () use ($batch) {
+            $year = AcademicYear::whereKey($batch->academic_year_id)->lockForUpdate()->firstOrFail();
             $count = 0;
             foreach ($batch->rows()->whereIn('status', [ImportRowStatus::Ready->value, ImportRowStatus::Update->value])->get() as $row) {
                 $data = $row->normalized_payload;
@@ -236,7 +236,7 @@ return $map;
                     $match->update(['status' => ImportRowStatus::Conflict, 'message' => "Ejaan nama berbeda dengan DATA AWAL: {$name}. Tinjau manual."]);
                 }
 
-continue;
+                continue;
             }
             ImportRow::create(['batch_id' => $batch->id, 'sheet_name' => $sheet->getTitle(), 'row_number' => $index + 1, 'raw_payload' => ['identifier' => $row[2] ?? null, 'name' => $name, 'gender' => $gender, 'reference' => true], 'normalized_payload' => ['nisn' => $ids['nisn'], 'nis' => $ids['nis'], 'name' => $name, 'normalized_name' => $this->identity->normalizeName($name), 'gender' => $gender, 'class_name' => $row[1] ?? null, 'reference_only' => true], 'status' => ImportRowStatus::Conflict, 'message' => 'Ada pada DATA AWAL tetapi tidak ada pada sheet kelas. Tinjau status siswa.']);
         }

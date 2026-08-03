@@ -67,7 +67,7 @@ Route::middleware('auth')->group(function (): void {
             Route::get('/instrumen', [InstrumentController::class, 'index'])->name('instruments.index');
             Route::post('/instrumen', [InstrumentController::class, 'store'])->name('instruments.store');
             Route::put('/instrumen/{instrument}', [InstrumentController::class, 'update'])->name('instruments.update');
-            Route::put('/tingkat-pelanggaran', [InstrumentController::class, 'severities'])->name('instruments.severities');
+            Route::put('/tingkat-pelanggaran', [InstrumentController::class, 'severities'])->name('severities.update');
 
             Route::get('/impor', [StudentImportController::class, 'index'])->name('imports.index');
             Route::post('/impor', [StudentImportController::class, 'store'])->name('imports.store');
@@ -81,7 +81,7 @@ Route::middleware('auth')->group(function (): void {
             Route::post('/master/kelas', [MasterDataController::class, 'classStore'])->name('master.class');
             Route::post('/master/guru', [MasterDataController::class, 'teacher'])->name('master.teacher');
             Route::post('/master/kelas-binaan', [MasterDataController::class, 'assign'])->name('master.assign');
-            Route::put('/master/akun/{user}', [MasterDataController::class, 'account'])->name('master.account');
+            Route::put('/master/akun/{user}', [MasterDataController::class, 'account'])->name('accounts.update');
         });
 
         Route::middleware('role:super_admin')->group(function (): void {
