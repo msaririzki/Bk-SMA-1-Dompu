@@ -28,8 +28,8 @@
         <div class="stat"><p class="stat-label">Diimpor</p><p class="stat-value">{{ $batch->imported_rows }}</p></div>
     </div>
 
-    <form class="card card-body mt-6 grid gap-3 md:grid-cols-[1fr_220px_180px_auto]">
-        <input class="form-control" name="q" value="{{ request('q') }}" placeholder="Cari nama/identitas">
+    <form data-auto-filter-form class="card card-body mt-6 grid gap-3 md:grid-cols-[1fr_220px_180px_auto]">
+        <div><input class="form-control" name="q" value="{{ request('q') }}" placeholder="Cari nama/identitas"><p class="field-help">Pencarian berjalan 2 detik setelah selesai mengetik.</p></div>
         <select class="form-select" name="sheet">
             <option value="">Semua sheet</option>
             @foreach ($sheets as $sheet)

@@ -42,5 +42,5 @@
         <span data-student-spinner class="student-search-spinner hidden" aria-hidden="true"></span>
     </div>
     <div id="{{ $inputId }}-results" data-student-results class="student-search-results hidden" role="listbox"></div>
-    <p data-student-help class="field-help"><x-icon name="search" class="mt-0.5 size-3.5 shrink-0" /> Ketik sebagian nama, NIS, NISN, atau ID sementara lalu pilih hasilnya.</p>
+    <p data-student-help class="field-help"><x-icon name="search" class="mt-0.5 size-3.5 shrink-0" /> Ketik sebagian nama atau identitas; hasil muncul 2 detik setelah selesai mengetik.</p>
 </div>

@@ -43,13 +43,19 @@ window.addEventListener('resize', () => {
     }
 });
 
-const debounce = (callback, delay = 350) => {
+const SEARCH_DELAY_MS = 2000;
+
+const debounce = (callback, delay = SEARCH_DELAY_MS) => {
     let timer;
 
-    return (...args) => {
+    const debounced = (...args) => {
         window.clearTimeout(timer);
         timer = window.setTimeout(() => callback(...args), delay);
     };
+
+    debounced.cancel = () => window.clearTimeout(timer);
+
+    return debounced;
 };
 
 document.querySelectorAll('[data-auto-filter-form]').forEach((form) => {
@@ -177,7 +183,7 @@ document.querySelectorAll('[data-student-autocomplete]').forEach((autocomplete) 
         } finally {
             if (requestController === currentController) spinner.classList.add('hidden');
         }
-    }, 250);
+    }, SEARCH_DELAY_MS);
 
     queryInput.addEventListener('input', () => {
         if (queryInput.value !== selectedLabel) valueInput.value = '';
@@ -214,6 +220,11 @@ document.querySelectorAll('[data-student-autocomplete]').forEach((autocomplete) 
     });
 
     document.addEventListener('click', (event) => {
-        if (!autocomplete.contains(event.target)) closeResults();
+        if (!autocomplete.contains(event.target)) {
+            searchStudents.cancel();
+            requestController?.abort();
+            spinner.classList.add('hidden');
+            closeResults();
+        }
     });
 });

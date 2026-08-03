@@ -6,7 +6,7 @@
     <a class="btn btn-primary" href="{{ route('cases.create') }}"><x-icon name="plus" /> Catat pelanggaran</a>
 </header>
 <form data-auto-filter-form class="card card-body mb-6 grid gap-4 md:grid-cols-[minmax(0,1fr)_220px_auto]">
-    <div><label class="form-label" for="case-search">Cari kasus</label><div class="input-with-icon"><x-icon name="search" /><input id="case-search" class="form-control" name="q" value="{{ request('q') }}" placeholder="Ketik sebagian nama, NIS, atau NISN..."></div><p class="field-help">Hasil diperbarui otomatis saat Anda mengetik.</p></div>
+    <div><label class="form-label" for="case-search">Cari kasus</label><div class="input-with-icon"><x-icon name="search" /><input id="case-search" class="form-control" name="q" value="{{ request('q') }}" placeholder="Ketik sebagian nama, NIS, atau NISN..."></div><p class="field-help">Pencarian berjalan 2 detik setelah selesai mengetik.</p></div>
     <div><label class="form-label" for="case-status">Status</label><select id="case-status" class="form-select" name="status"><option value="">Semua status</option>@foreach(\App\Enums\CaseStatus::cases() as $status)<option value="{{ $status->value }}" @selected(request('status') === $status->value)>{{ $status->label() }}</option>@endforeach</select></div>
     <button class="btn btn-primary self-end"><x-icon name="search" /> Terapkan</button>
 </form>
