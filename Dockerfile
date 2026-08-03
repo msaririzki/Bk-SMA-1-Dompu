@@ -7,7 +7,7 @@ COPY vite.config.js ./
 RUN npm run build
 
 FROM php:8.5-fpm-alpine AS runtime
-RUN apk add --no-cache bash icu-libs libzip libpng libjpeg-turbo freetype libwebp \
+RUN apk add --no-cache bash icu-libs libzip libpng libjpeg-turbo freetype libwebp mariadb-client \
     && apk add --no-cache --virtual .build-deps icu-dev libzip-dev libpng-dev libjpeg-turbo-dev freetype-dev libwebp-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install -j$(nproc) bcmath exif gd intl opcache pcntl pdo_mysql zip \
