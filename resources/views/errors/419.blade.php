@@ -1,0 +1,7 @@
+@extends('errors.layout')
+@section('code', '419')
+@section('title', 'Sesi Anda telah berakhir')
+@section('message', 'Halaman terlalu lama terbuka atau sesi keamanan sudah kedaluwarsa. Data belum diproses oleh sistem.')
+@section('hint', 'Muat ulang halaman, masuk kembali bila diminta, kemudian ulangi pengisian formulir.')
+@section('primary_url', route('login'))
+@section('primary_label', 'Masuk kembali')

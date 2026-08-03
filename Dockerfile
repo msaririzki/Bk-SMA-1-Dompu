@@ -12,6 +12,7 @@ RUN apk add --no-cache bash icu-libs libzip libpng libjpeg-turbo freetype libweb
     && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install -j1 bcmath exif gd intl pcntl pdo_mysql zip \
     && apk del .build-deps
+COPY deploy/php.ini /usr/local/etc/php/conf.d/99-bk.ini
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 COPY composer.json composer.lock ./

@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('code', '413')
+@section('title', 'Ukuran berkas terlalu besar')
+@section('message', 'Berkas yang dikirim melebihi batas unggahan yang diizinkan oleh sistem.')
+@section('hint', 'Gunakan maksimal 10 berkas dengan ukuran paling besar 10 MB untuk setiap berkas, lalu coba unggah kembali.')

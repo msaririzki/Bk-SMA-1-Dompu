@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('code', '400')
+@section('title', 'Permintaan tidak valid')
+@section('message', 'Sistem tidak dapat membaca permintaan yang dikirim dari perangkat atau browser Anda.')
+@section('hint', 'Muat ulang halaman dan ulangi langkah sebelumnya. Pastikan formulir diisi melalui halaman aplikasi yang tersedia.')

@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('code', '403')
+@section('title', 'Akses tidak diizinkan')
+@section('message', 'Akun Anda tidak memiliki hak akses untuk membuka atau mengubah data pada halaman ini.')
+@section('hint', 'Pastikan Anda menggunakan akun yang benar. Jika akses ini memang diperlukan, hubungi koordinator BK atau administrator.')

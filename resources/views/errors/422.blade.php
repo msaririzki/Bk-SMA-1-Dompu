@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('code', '422')
+@section('title', 'Data belum dapat diproses')
+@section('message', 'Beberapa data yang dikirim belum sesuai dengan ketentuan sistem.')
+@section('hint', 'Kembali ke formulir, periksa bagian yang ditandai, lalu kirim ulang setelah diperbaiki.')

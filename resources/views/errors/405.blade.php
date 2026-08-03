@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('code', '405')
+@section('title', 'Tindakan tidak tersedia')
+@section('message', 'Halaman tersebut tidak menerima cara akses atau tindakan yang baru saja dilakukan.')
+@section('hint', 'Kembali ke menu aplikasi dan gunakan tombol yang tersedia untuk menjalankan tindakan tersebut.')

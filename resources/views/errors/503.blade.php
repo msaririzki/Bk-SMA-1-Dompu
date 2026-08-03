@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('code', '503')
+@section('title', 'Sistem sedang dalam pemeliharaan')
+@section('message', 'Layanan dihentikan sementara agar pembaruan dan pemeliharaan dapat dilakukan dengan aman.')
+@section('hint', 'Silakan buka kembali halaman ini beberapa saat lagi. Data yang telah tersimpan tetap aman.')

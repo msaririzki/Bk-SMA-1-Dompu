@@ -1,0 +1,7 @@
+@extends('errors.layout')
+@section('code', '401')
+@section('title', 'Silakan masuk terlebih dahulu')
+@section('message', 'Anda perlu masuk menggunakan akun yang sesuai sebelum membuka halaman ini.')
+@section('hint', 'Gunakan halaman masuk staf untuk Guru BK dan admin, atau halaman masuk siswa untuk portal siswa.')
+@section('primary_url', route('login'))
+@section('primary_label', 'Masuk ke sistem')

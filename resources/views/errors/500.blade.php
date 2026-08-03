@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('code', '500')
+@section('title', 'Terjadi gangguan pada sistem')
+@section('message', 'Permintaan belum dapat diselesaikan karena sistem mengalami kendala sementara.')
+@section('hint', 'Data teknis kesalahan telah dicatat dengan aman. Coba kembali beberapa saat lagi atau hubungi administrator jika kendala berulang.')

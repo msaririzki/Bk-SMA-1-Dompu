@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('code', '429')
+@section('title', 'Terlalu banyak percobaan')
+@section('message', 'Sistem menerima terlalu banyak permintaan dalam waktu singkat dan menghentikannya sementara demi keamanan.')
+@section('hint', 'Tunggu beberapa saat sebelum mencoba kembali. Hindari menekan tombol simpan atau masuk berulang kali.')

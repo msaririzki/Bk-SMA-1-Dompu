@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('code', '408')
+@section('title', 'Waktu permintaan telah habis')
+@section('message', 'Koneksi atau proses pengiriman data berlangsung terlalu lama sehingga dihentikan oleh sistem.')
+@section('hint', 'Periksa koneksi internet, lalu muat ulang halaman dan coba kirim kembali.')
