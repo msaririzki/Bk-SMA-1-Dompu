@@ -29,5 +29,33 @@ class ViolationWorkflowTest extends TestCase
         $instrument->update(['points' => 10, 'name' => 'Terlambat diperbarui']);
         $this->assertSame(5, $case->items()->first()->points);
         $this->assertSame('Terlambat', $case->items()->first()->instrument_name);
+
+        $this->actingAs($user)
+            ->get(route('cases.index'))
+            ->assertOk()
+            ->assertSee(route('students.recap', $student), false)
+            ->assertSee('Rekap PDF');
+
+        $this->actingAs($user)
+            ->get(route('cases.show', $case))
+            ->assertOk()
+            ->assertSee(route('students.recap', $student), false)
+            ->assertSee('Unduh rekap PDF');
+    }
+
+    public function test_instrument_categories_are_collapsed_into_clickable_sections(): void
+    {
+        AcademicYear::create(['name' => '2026/2027', 'is_active' => true]);
+        $user = User::factory()->create(['role' => UserRole::Coordinator]);
+        $category = ViolationCategory::create(['code' => 'A', 'name' => 'Keterlambatan']);
+        ViolationInstrument::create(['category_id' => $category->id, 'code' => 'A01', 'name' => 'Terlambat', 'points' => 5, 'sanction' => 'Pembinaan', 'is_active' => true]);
+
+        $this->actingAs($user)
+            ->get(route('cases.create'))
+            ->assertOk()
+            ->assertSee('<details class="instrument-category"', false)
+            ->assertSee('Keterlambatan')
+            ->assertSee('1 pilihan pelanggaran')
+            ->assertSee('Klik jenis instrumen untuk menampilkan pilihan pelanggaran.');
     }
 }

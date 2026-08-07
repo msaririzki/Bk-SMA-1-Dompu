@@ -26,21 +26,27 @@
     </div>
 
     <section class="card overflow-hidden xl:sticky xl:top-24">
-        <div class="card-header"><div class="flex items-center gap-3"><span class="feature-icon size-10"><x-icon name="scale" class="size-5" /></span><div><h2 class="section-title">Instrumen pelanggaran</h2><p class="text-xs text-slate-400">Satu kejadian dapat memuat beberapa pelanggaran.</p></div></div></div>
+        <div class="card-header"><div class="flex items-center gap-3"><span class="feature-icon size-10"><x-icon name="scale" class="size-5" /></span><div><h2 class="section-title">Instrumen pelanggaran</h2><p class="text-xs text-slate-400">Klik jenis instrumen untuk menampilkan pilihan pelanggaran.</p></div></div></div>
         <div class="max-h-[62vh] overflow-y-auto border-b border-slate-100">
+            @php($selectedInstrumentIds = collect(old('instrument_ids', []))->map(fn ($id) => (string) $id))
             @foreach($categories as $category)
-                <div class="border-b border-slate-100 p-5 last:border-b-0 sm:p-6">
-                    <div class="flex items-center gap-2"><span class="grid size-7 place-items-center rounded-lg bg-navy-900 text-xs font-extrabold text-white">{{ $category->code }}</span><h3 class="font-extrabold text-navy-900">{{ $category->name }}</h3></div>
-                    <div class="mt-4 space-y-2">
+                @php($categoryHasSelection = $category->instruments->contains(fn ($instrument) => $selectedInstrumentIds->contains((string) $instrument->id)))
+                <details class="instrument-category" @if($categoryHasSelection) open @endif>
+                    <summary class="instrument-category-summary">
+                        <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-navy-900 text-xs font-extrabold text-white">{{ $category->code }}</span>
+                        <span class="min-w-0 flex-1"><span class="block font-extrabold text-navy-900">{{ $category->name }}</span><span class="mt-0.5 block text-xs font-medium text-slate-400">{{ $category->instruments->count() }} pilihan pelanggaran</span></span>
+                        <x-icon name="chevron-down" class="instrument-category-chevron size-5 shrink-0 text-slate-400" />
+                    </summary>
+                    <div class="instrument-category-options space-y-2">
                         @foreach($category->instruments as $instrument)
                             <label class="instrument-option">
-                                <input class="mt-1 size-4 shrink-0 rounded border-slate-300 accent-teal-600" type="checkbox" name="instrument_ids[]" value="{{ $instrument->id }}" @checked(in_array($instrument->id, old('instrument_ids', [])))>
+                                <input class="mt-1 size-4 shrink-0 rounded border-slate-300 accent-teal-600" type="checkbox" name="instrument_ids[]" value="{{ $instrument->id }}" @checked($selectedInstrumentIds->contains((string) $instrument->id))>
                                 <span class="min-w-0 flex-1"><span class="block text-sm font-bold text-slate-800">{{ $instrument->code }} · {{ $instrument->name }}</span><span class="mt-1 block text-xs leading-5 text-slate-500">{{ $instrument->sanction }}</span></span>
                                 <span class="badge badge-amber h-fit shrink-0">{{ $instrument->points }} poin</span>
                             </label>
                         @endforeach
                     </div>
-                </div>
+                </details>
             @endforeach
         </div>
         <div class="flex flex-col-reverse gap-3 bg-slate-50/70 p-5 sm:flex-row sm:items-center sm:justify-end sm:p-6"><a class="btn btn-secondary" href="{{ route('cases.index') }}">Batal</a><button class="btn btn-primary"><x-icon name="check" /> Simpan pelanggaran</button></div>

@@ -16,6 +16,8 @@
         @case('plus')<path stroke-linecap="round" d="M12 5v14M5 12h14"/>@break
         @case('arrow-right')<path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-5-5 5 5-5 5"/>@break
         @case('arrow-left')<path stroke-linecap="round" stroke-linejoin="round" d="M19 12H5m5 5-5-5 5-5"/>@break
+        @case('chevron-down')<path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/>@break
+        @case('download')<path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4.5-4.5M12 15l-4.5-4.5M4.5 18.75h15"/>@break
         @case('search')<path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35m1.1-5.4a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z"/>@break
         @case('user')<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 7.5a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 21a7.5 7.5 0 0 1 15 0"/>@break
         @case('calendar')<path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v3m10.5-3v3M3.75 9h16.5m-14.25-4.5h12A2.25 2.25 0 0 1 20.25 6.75v11.5A2.25 2.25 0 0 1 18 20.5H6a2.25 2.25 0 0 1-2.25-2.25V6.75A2.25 2.25 0 0 1 6 4.5Z"/>@break

@@ -2,10 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AcademicYear;
 use App\Models\CmsPage;
 use App\Models\SchoolSetting;
+use App\Models\SeverityLevel;
+use App\Models\Student;
+use App\Models\ViolationCase;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -20,7 +25,51 @@ class CmsController extends Controller
 
     public function home()
     {
-        return view('public.home', ['pages' => CmsPage::where('is_published', true)->get()->keyBy('slug'), 'settings' => SchoolSetting::pluck('value', 'key')]);
+        $year = AcademicYear::active();
+        $priorityCounts = ['Ringan' => 0, 'Sedang' => 0, 'Berat' => 0];
+
+        if ($year) {
+            $levels = SeverityLevel::orderBy('min_points')->get();
+            $annualPoints = DB::table('violation_cases')
+                ->selectRaw('SUM(case_items.points) AS total_points')
+                ->join('case_items', 'case_items.case_id', '=', 'violation_cases.id')
+                ->where('violation_cases.academic_year_id', $year->id)
+                ->where('violation_cases.status', '!=', 'cancelled')
+                ->whereNull('violation_cases.deleted_at')
+                ->groupBy('violation_cases.student_id')
+                ->pluck('total_points');
+
+            foreach ($annualPoints as $points) {
+                $level = $levels->first(fn (SeverityLevel $level) => $level->contains((int) $points));
+                $name = mb_strtolower($level?->name ?? 'berat');
+                $bucket = match (true) {
+                    str_contains($name, 'ringan') => 'Ringan',
+                    str_contains($name, 'sedang') => 'Sedang',
+                    default => 'Berat',
+                };
+                $priorityCounts[$bucket]++;
+            }
+        }
+
+        $priorityTotal = array_sum($priorityCounts);
+        $priorityColors = ['Ringan' => 'bg-teal-400', 'Sedang' => 'bg-amber-400', 'Berat' => 'bg-orange-400'];
+        $priorities = collect($priorityCounts)->map(fn (int $count, string $label) => [
+            'label' => $label,
+            'count' => $count,
+            'percentage' => $priorityTotal > 0 ? (int) round($count / $priorityTotal * 100) : 0,
+            'color' => $priorityColors[$label],
+        ])->values();
+
+        return view('public.home', [
+            'pages' => CmsPage::where('is_published', true)->get()->keyBy('slug'),
+            'settings' => SchoolSetting::pluck('value', 'key'),
+            'preview' => [
+                'students' => Student::where('status', 'active')->count(),
+                'month_cases' => ViolationCase::whereBetween('occurred_at', [now()->startOfMonth(), now()->endOfMonth()])->count(),
+                'open_cases' => ViolationCase::whereIn('status', ['open', 'in_follow_up'])->count(),
+                'priorities' => $priorities,
+            ],
+        ]);
     }
 
     public function index()
