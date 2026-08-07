@@ -63,13 +63,16 @@
                         <td><span class="badge {{ $row->status->value === 'conflict' ? 'badge-orange' : ($row->status->value === 'imported' ? 'badge-emerald' : 'badge-slate') }}">{{ $row->status->value }}</span></td>
                         <td class="max-w-sm text-xs">
                             <p>{{ $row->message }}</p>
+                            @if ($row->matchedStudent)
+                                <div class="mt-2 rounded-xl border border-teal-100 bg-teal-50 p-3 text-teal-800"><strong class="block">Calon siswa yang sudah ada</strong><span class="mt-1 block">{{ $row->matchedStudent->name }} · {{ $row->matchedStudent->nisn ?: ($row->matchedStudent->nis ?: $row->matchedStudent->temporary_id) }}</span></div>
+                            @endif
                             @if ($row->status === \App\Enums\ImportRowStatus::Conflict && $batch->status !== 'committed')
                                 <div class="mt-3 flex flex-wrap gap-2">
                                     @unless ($row->normalized_payload['reference_only'] ?? false)
                                         <form method="post" action="{{ route('imports.resolve', [$batch, $row]) }}">
                                             @csrf
                                             <input type="hidden" name="decision" value="accept">
-                                            <button class="btn btn-accent px-3 py-1.5 text-xs">Gunakan sheet kelas</button>
+                                            <button class="btn btn-accent px-3 py-1.5 text-xs">{{ $row->matchedStudent ? 'Perbarui siswa ini' : 'Gunakan sheet kelas' }}</button>
                                         </form>
                                     @endunless
                                     <form method="post" action="{{ route('imports.resolve', [$batch, $row]) }}">
@@ -86,4 +89,17 @@
         </table>
     </div>
     <div class="mt-5">{{ $rows->links() }}</div>
+
+    @if (auth()->user()->role === \App\Enums\UserRole::SuperAdmin && $batch->status === 'review')
+        <section id="batalkan-review" class="card mt-8 border-red-200">
+            <div class="card-header"><div><h2 class="section-title text-red-700">Batalkan file tahap review</h2><p class="section-description">Hanya menghapus file Excel dan hasil analisis yang belum dikonfirmasi. Data siswa, kelas, kasus, dan riwayat pelanggaran tidak ikut dihapus.</p></div><span class="badge badge-red">Super Admin</span></div>
+            <form method="post" action="{{ route('imports.destroy', $batch) }}" class="card-body grid items-end gap-4 lg:grid-cols-[minmax(0,1fr)_220px_auto]" onsubmit="return confirm('Batalkan file review ini? Data siswa tidak akan dihapus.')">
+                @csrf
+                @method('delete')
+                <div><label class="form-label" for="discard-password">Kata sandi Super Admin</label><input id="discard-password" class="form-control" type="password" name="password" required autocomplete="current-password" placeholder="Masukkan kata sandi akun"></div>
+                <div><label class="form-label" for="discard-confirmation">Ketik HAPUS</label><input id="discard-confirmation" class="form-control" name="confirmation" required autocomplete="off" placeholder="HAPUS"></div>
+                <button class="btn btn-danger"><x-icon name="trash" /> Batalkan file review</button>
+            </form>
+        </section>
+    @endif
 @endsection

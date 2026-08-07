@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\AcademicYear;
 use App\Models\SchoolClass;
 use App\Models\Student;
+use App\Models\StudentAlias;
 use App\Models\User;
 use App\Services\AuditService;
 use App\Services\ScoringService;
@@ -91,8 +92,16 @@ class StudentController extends Controller
         $data = $request->validate(['name' => 'required|string|max:255', 'nis' => 'nullable|digits_between:4,20|unique:students,nis,'.$student->id.',id', 'nisn' => 'nullable|digits:10|unique:students,nisn,'.$student->id.',id', 'gender' => 'required|in:L,P', 'status' => 'required|in:active,graduated,transferred,withdrawn']);
         $before = $student->toArray();
         $data['normalized_name'] = $identity->normalizeName($data['name']);
-        $student->update($data);
-        $audit->record('student.updated', $student, $before, $student->fresh()->toArray());
+        DB::transaction(function () use ($audit, $before, $data, $student): void {
+            if ($student->name !== $data['name']) {
+                StudentAlias::firstOrCreate(
+                    ['student_id' => $student->id, 'normalized_name' => $student->normalized_name],
+                    ['name' => $student->name, 'source' => 'manual_update'],
+                );
+            }
+            $student->update($data);
+            $audit->record('student.updated', $student, $before, $student->fresh()->toArray());
+        });
 
         return back()->with('success', 'Data siswa diperbarui.');
     }

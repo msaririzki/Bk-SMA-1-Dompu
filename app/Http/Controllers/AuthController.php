@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\Student;
 use App\Models\User;
 use App\Services\AuditService;
+use App\Services\StudentIdentityService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -40,15 +41,28 @@ class AuthController extends Controller
         return redirect()->intended(route('dashboard'));
     }
 
-    public function studentLogin(Request $request, AuditService $audit)
+    public function studentLogin(Request $request, AuditService $audit, StudentIdentityService $identity)
     {
-        $data = $request->validate(['identifier' => 'required|string|max:50']);
-        $identifier = preg_replace('/\s+/', '', trim($data['identifier']));
+        $data = $request->validate(['identifier' => 'required|string|max:100']);
+        $input = preg_replace('/\s+/u', ' ', trim($data['identifier']));
+        $identifier = preg_replace('/\s+/', '', $input);
         $student = Student::where('status', 'active')->where(function ($query) use ($identifier) {
             $query->where('nis', $identifier)->orWhere('nisn', $identifier)->orWhere('temporary_id', $identifier);
         })->first();
+
+        if (! $student && preg_match('/\p{L}/u', $input)) {
+            $nameMatches = Student::where('status', 'active')
+                ->where('normalized_name', $identity->normalizeName($input))
+                ->limit(2)
+                ->get();
+
+            if ($nameMatches->count() === 1) {
+                $student = $nameMatches->first();
+            }
+        }
+
         if (! $student) {
-            throw ValidationException::withMessages(['identifier' => 'NISN, NIS, atau kode sementara tidak ditemukan atau belum aktif.']);
+            throw ValidationException::withMessages(['identifier' => 'Data siswa tidak ditemukan atau nama lengkap tidak dapat dipastikan. Periksa ejaan, lalu gunakan NISN/NIS jika ada nama yang sama.']);
         }
 
         $created = false;
@@ -77,7 +91,7 @@ class AuthController extends Controller
             ]);
         });
         if (! $user?->is_active || $user->role !== UserRole::Student) {
-            throw ValidationException::withMessages(['identifier' => 'NISN, NIS, atau kode sementara tidak ditemukan atau belum aktif.']);
+            throw ValidationException::withMessages(['identifier' => 'Data siswa tidak ditemukan atau nama lengkap tidak dapat dipastikan. Periksa ejaan, lalu gunakan NISN/NIS jika ada nama yang sama.']);
         }
 
         Auth::login($user);

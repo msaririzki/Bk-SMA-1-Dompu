@@ -89,6 +89,8 @@ Route::middleware('auth')->group(function (): void {
         });
 
         Route::middleware('role:super_admin')->group(function (): void {
+            Route::delete('/impor/{batch}', [StudentImportController::class, 'destroy'])->name('imports.destroy');
+
             Route::get('/cms', [CmsController::class, 'index'])->name('cms.index');
             Route::get('/cms/{page}/edit', [CmsController::class, 'edit'])->name('cms.edit');
             Route::put('/cms/{page}', [CmsController::class, 'update'])->name('cms.update');

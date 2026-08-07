@@ -7,6 +7,7 @@ use App\Models\AcademicYear;
 use App\Models\Student;
 use App\Models\User;
 use App\Models\ViolationCase;
+use App\Services\StudentIdentityService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -67,7 +68,7 @@ class AuthenticationAndPrivacyTest extends TestCase
     public function test_unknown_student_identifier_is_rejected_in_indonesian(): void
     {
         $this->post(route('student.login.store'), ['identifier' => '0000000000'])
-            ->assertSessionHasErrors(['identifier' => 'NISN, NIS, atau kode sementara tidak ditemukan atau belum aktif.']);
+            ->assertSessionHasErrors(['identifier' => 'Data siswa tidak ditemukan atau nama lengkap tidak dapat dipastikan. Periksa ejaan, lalu gunakan NISN/NIS jika ada nama yang sama.']);
 
         $this->assertGuest();
     }
@@ -87,9 +88,43 @@ class AuthenticationAndPrivacyTest extends TestCase
     {
         $this->get(route('student.login'))
             ->assertOk()
-            ->assertSee('NISN / NIS / Kode sementara kelas X')
+            ->assertSee('NISN / NIS / Kode sementara / Nama lengkap')
+            ->assertSee('Cek pelanggaran siswa')
+            ->assertSee('Nama sebagian atau salah eja tidak dapat digunakan.')
             ->assertDontSee('name="password"', false)
             ->assertDontSee('PIN pribadi');
+    }
+
+    public function test_student_can_login_with_an_exact_full_name(): void
+    {
+        $name = 'Muhammad Farhan Ramadhan';
+        $student = Student::factory()->create([
+            'name' => $name,
+            'normalized_name' => app(StudentIdentityService::class)->normalizeName($name),
+        ]);
+
+        $this->post(route('student.login.store'), ['identifier' => '  muhammad farhan ramadhan  '])
+            ->assertRedirect(route('student.portal'));
+
+        $this->assertAuthenticatedAs(User::where('student_id', $student->id)->firstOrFail());
+    }
+
+    public function test_partial_misspelled_or_duplicate_full_name_is_rejected(): void
+    {
+        $identity = app(StudentIdentityService::class);
+        $name = 'Muhammad Farhan Ramadhan';
+        Student::factory()->create(['name' => $name, 'normalized_name' => $identity->normalizeName($name)]);
+
+        $this->post(route('student.login.store'), ['identifier' => 'Muhammad Farhan'])
+            ->assertSessionHasErrors('identifier');
+        $this->post(route('student.login.store'), ['identifier' => 'Muhammad Farhan Ramadhanh'])
+            ->assertSessionHasErrors('identifier');
+        $this->assertGuest();
+
+        Student::factory()->create(['name' => $name, 'normalized_name' => $identity->normalizeName($name)]);
+        $this->post(route('student.login.store'), ['identifier' => $name])
+            ->assertSessionHasErrors('identifier');
+        $this->assertGuest();
     }
 
     public function test_student_portal_only_uses_attached_student(): void

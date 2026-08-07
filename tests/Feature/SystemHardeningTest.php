@@ -15,6 +15,7 @@ use App\Models\ViolationCategory;
 use App\Models\ViolationInstrument;
 use App\Services\AttachmentService;
 use App\Services\ScoringService;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -128,6 +129,35 @@ class SystemHardeningTest extends TestCase
         $admin = User::factory()->create(['role' => UserRole::SuperAdmin]);
 
         $this->actingAs($admin)->get(route('students.recap', $student))->assertStatus(422);
+    }
+
+    public function test_archiving_or_attempted_hard_deletion_does_not_remove_violation_history(): void
+    {
+        $year = AcademicYear::create(['name' => '2026/2027', 'is_active' => true]);
+        $student = Student::factory()->create(['name' => 'Siswa Dengan Riwayat']);
+        $admin = User::factory()->create(['role' => UserRole::SuperAdmin]);
+        $case = ViolationCase::create([
+            'case_number' => 'BK-2026-00888',
+            'student_id' => $student->id,
+            'academic_year_id' => $year->id,
+            'created_by' => $admin->id,
+            'occurred_at' => now(),
+            'chronology' => 'Riwayat harus tetap tersedia walaupun profil siswa diarsipkan.',
+            'status' => CaseStatus::Open,
+        ]);
+
+        $student->delete();
+        $this->assertSoftDeleted($student);
+        $this->assertSame('Siswa Dengan Riwayat', $case->fresh()->student->name);
+        $this->assertDatabaseHas('violation_cases', ['id' => $case->id, 'student_id' => $student->id]);
+
+        try {
+            $student->forceDelete();
+            $this->fail('Database seharusnya menolak penghapusan fisik siswa yang memiliki kasus.');
+        } catch (QueryException) {
+            $this->assertDatabaseHas('students', ['id' => $student->id]);
+            $this->assertDatabaseHas('violation_cases', ['id' => $case->id, 'student_id' => $student->id]);
+        }
     }
 
     private function casePayload(Student $student, ViolationInstrument $instrument): array

@@ -8,6 +8,8 @@ use App\Models\ImportRow;
 use App\Services\AuditService;
 use App\Services\StudentWorkbookImporter;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class StudentImportController extends Controller
 {
@@ -60,5 +62,33 @@ class StudentImportController extends Controller
         return response()
             ->download($importer->reviewReport($batch), "laporan-review-impor-{$batch->id}.xlsx")
             ->deleteFileAfterSend(true);
+    }
+
+    public function destroy(Request $request, ImportBatch $batch, AuditService $audit)
+    {
+        abort_unless($batch->status === 'review', 422, 'Hanya file yang masih dalam tahap review yang dapat dibatalkan. Data impor yang sudah dikonfirmasi tidak dapat dihapus.');
+
+        $request->validate([
+            'password' => ['required', 'current_password'],
+            'confirmation' => ['required', 'in:HAPUS'],
+        ], [
+            'password.current_password' => 'Kata sandi akun tidak sesuai.',
+            'confirmation.in' => 'Ketik HAPUS untuk mengonfirmasi pembatalan file review.',
+        ], [
+            'password' => 'kata sandi akun',
+            'confirmation' => 'konfirmasi',
+        ]);
+
+        $before = $batch->toArray();
+        $storedPath = $batch->stored_path;
+
+        DB::transaction(function () use ($audit, $batch, $before): void {
+            $audit->record('import.review_discarded', $batch, $before, null, 'File tahap review dibatalkan oleh Super Admin.');
+            $batch->delete();
+        });
+
+        Storage::disk('local')->delete($storedPath);
+
+        return redirect()->route('imports.index')->with('success', 'File review berhasil dibatalkan. Tidak ada data siswa atau riwayat pelanggaran yang dihapus.');
     }
 }

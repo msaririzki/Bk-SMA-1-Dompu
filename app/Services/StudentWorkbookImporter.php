@@ -10,6 +10,7 @@ use App\Models\ImportBatch;
 use App\Models\ImportRow;
 use App\Models\SchoolClass;
 use App\Models\Student;
+use App\Models\StudentAlias;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -145,9 +146,20 @@ class StudentWorkbookImporter
         if ($match) {
             return [ImportRowStatus::Update, $match, 'Identitas resmi cocok; enrollment akan diperbarui.'];
         }
-        $candidates = Student::where('normalized_name', $data['normalized_name'])->where('gender', $data['gender'])->count();
-        if ($candidates > 0) {
-            return [ImportRowStatus::Conflict, null, 'Nama serupa ditemukan. Tinjau manual; sistem tidak menggabungkan berdasarkan nama.'];
+        $candidates = Student::where('normalized_name', $data['normalized_name'])
+            ->where('gender', $data['gender'])
+            ->limit(2)
+            ->get();
+        if ($candidates->isNotEmpty()) {
+            $candidate = $candidates->count() === 1 ? $candidates->first() : null;
+
+            return [
+                ImportRowStatus::Conflict,
+                $candidate,
+                $candidate
+                    ? 'Satu siswa dengan nama dan jenis kelamin yang sama ditemukan. Tinjau manual sebelum memperbarui siswa tersebut.'
+                    : 'Lebih dari satu siswa dengan nama dan jenis kelamin yang sama ditemukan. Gunakan ID sistem, NISN, atau NIS untuk menentukan siswa.',
+            ];
         }
 
         return [ImportRowStatus::Ready, null, $data['nisn'] || $data['nis'] ? 'Siswa baru dengan identitas resmi.' : 'Siswa baru; ID sementara akan dibuat.'];
@@ -169,6 +181,12 @@ class StudentWorkbookImporter
                         'nis' => $data['nis'], 'nisn' => $data['nisn'], 'name' => $data['name'], 'normalized_name' => $data['normalized_name'], 'gender' => $data['gender'], 'status' => StudentStatus::Active,
                     ]);
                 } else {
+                    if ($student->name !== $data['name']) {
+                        StudentAlias::firstOrCreate(
+                            ['student_id' => $student->id, 'normalized_name' => $student->normalized_name],
+                            ['name' => $student->name, 'source' => "import:{$batch->id}"],
+                        );
+                    }
                     $student->update(array_filter(['nis' => $data['nis'], 'nisn' => $data['nisn'], 'name' => $data['name'], 'normalized_name' => $data['normalized_name'], 'gender' => $data['gender']], fn ($v) => $v !== null));
                 }
                 Enrollment::updateOrCreate(['student_id' => $student->id, 'academic_year_id' => $year->id], ['class_id' => $class->id, 'roll_number' => $data['roll_number'], 'status' => 'active']);
